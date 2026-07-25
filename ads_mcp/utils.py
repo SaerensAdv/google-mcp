@@ -68,15 +68,32 @@ def prevent_stdio_inheritance():
 
 
 def _create_credentials() -> google.auth.credentials.Credentials:
-    """Returns Application Default Credentials with the Google Ads scope, or the FastMCP token if found."""
-    from fastmcp.server.dependencies import get_access_token
+    """Returns credentials for the Google Ads API.
+
+    Resolution order:
+      1. Direct refresh token from env vars (pre-authenticated, for Replit deploy)
+      2. Application Default Credentials (local dev with gcloud auth)
+    """
     from google.oauth2.credentials import Credentials
 
-    token_obj = get_access_token()
-    if token_obj and token_obj.token:
-        # Create credentials using the access token provided by FastMCP
-        return Credentials(token=token_obj.token)
+    # 1. Check for direct refresh token in env vars (pre-authenticated mode)
+    refresh_token = os.environ.get("GOOGLE_ADS_REFRESH_TOKEN")
+    client_id = os.environ.get("GOOGLE_ADS_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_ADS_CLIENT_SECRET")
 
+    if refresh_token and client_id and client_secret:
+        logger.info("Using refresh token credentials from environment")
+        return Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=[_ADS_SCOPE],
+        )
+
+    # 2. Fall back to Application Default Credentials
+    logger.info("Using Application Default Credentials")
     with prevent_stdio_inheritance():
         credentials, _ = google.auth.default(scopes=[_ADS_SCOPE])
     return credentials
