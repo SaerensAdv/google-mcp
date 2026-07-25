@@ -1,4 +1,7 @@
-"""Minimal MCP server for ClickUp compatibility testing."""
+"""Minimal MCP server for ClickUp compatibility testing.
+
+Uses mcp.run() directly - no ASGI wrapper.
+"""
 
 from fastmcp import FastMCP
 import os
@@ -12,8 +15,8 @@ mcp = FastMCP("Google Ads")
 
 @mcp.tool()
 def ping() -> str:
-    """Test tool that returns a simple greeting."""
-    return "pong - Google Ads MCP is working"
+    """Returns pong to verify the server is working."""
+    return "pong"
 
 
 @mcp.tool()
@@ -36,32 +39,14 @@ def list_customers() -> str:
 
 
 def run_server() -> None:
-    import uvicorn
-
     port = int(os.environ.get("PORT", "8080"))
     logger.info(f"Starting minimal Google Ads MCP on port {port}")
 
-    app = mcp.http_app(transport="streamable-http")
-
-    class InjectAcceptHeader:
-        def __init__(self, app):
-            self.app = app
-
-        async def __call__(self, scope, receive, send):
-            if scope["type"] == "http":
-                headers = list(scope.get("headers", []))
-                has_sse = any(
-                    k == b"accept" and b"text/event-stream" in v
-                    for k, v in headers
-                )
-                if not has_sse:
-                    headers = [(k, v) for k, v in headers if k != b"accept"]
-                    headers.append((b"accept", b"text/event-stream, */*"))
-                    scope = dict(scope, headers=headers)
-            await self.app(scope, receive, send)
-
-    wrapped = InjectAcceptHeader(app)
-    uvicorn.run(wrapped, host="0.0.0.0", port=port, log_level="info")
+    mcp.run(
+        transport="streamable-http",
+        port=port,
+        host="0.0.0.0",
+    )
 
 
 if __name__ == "__main__":
