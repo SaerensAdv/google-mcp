@@ -1,0 +1,1 @@
+- [uv deployment venv fix](uv-deploy-venv.md) — `.pythonlibs` must be a uv venv built on the real nix Python (not the wrapper) or `uv sync`/publish fails with nix-store permission errors.

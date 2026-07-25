@@ -1,4 +1,4 @@
-modules = ["python-3.10"]
+modules = ["python-3.11"]
 
 [nix]
 channel = "stable-25_05"
@@ -42,4 +42,4 @@ externalPort = 80
 
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "export GOOGLE_ADS_MCP_BASE_URL=\"https://${REPLIT_DOMAINS%%,*}\"; exec google-ads-mcp"]
+run = ["bash", "-c", "if [ -n \"$REPLIT_DOMAINS\" ]; then export GOOGLE_ADS_MCP_BASE_URL=\"https://${REPLIT_DOMAINS%%,*}\"; fi; exec google-ads-mcp"]
