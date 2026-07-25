@@ -9,7 +9,7 @@ expertMode = true
 [userenv]
 
 [userenv.shared]
-GOOGLE_ADS_MCP_BASE_URL = "https://2f79b25f-d766-4740-9031-fdcc17e33f7d-00-2o5h6245ycod4.janeway.replit.dev"
+GOOGLE_ADS_MCP_BASE_URL = "https://sa-google-ads-mcp.replit.app"
 PORT = "8080"
 
 [workflows]
@@ -39,3 +39,7 @@ outputType = "console"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "-c", "export GOOGLE_ADS_MCP_BASE_URL=\"https://${REPLIT_DOMAINS%%,*}\"; exec google-ads-mcp"]
