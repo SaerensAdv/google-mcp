@@ -58,7 +58,7 @@ def _get_asgi_app():
                     )
             return await call_next(request)
 
-    return APIKeyMiddleware
+    return Middleware(APIKeyMiddleware)
 
 
 def run_server() -> None:
@@ -77,7 +77,7 @@ def run_server() -> None:
         transport="streamable-http",
         port=port,
         host="0.0.0.0",
-        http_middlewares=[_get_asgi_app()],
+        middleware=[_get_asgi_app()],
         uvicorn_config={"access_log": False},
     )
 

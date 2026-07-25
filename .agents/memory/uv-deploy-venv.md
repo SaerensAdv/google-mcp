@@ -7,4 +7,6 @@ Rule: `.pythonlibs` must be a real venv created against the actual nix Python bi
 
 **Why:** Deployment builds run `uv lock` + `uv sync`. With a pip-created `.pythonlibs` (plain dir) or a venv whose `pyvenv.cfg` `home` points at the `python-wrapped` wrapper, uv installed wheels into `/nix/store/.../site-packages` → `Permission denied (os error 13)` and the publish failed.
 
+Also: uv caches interpreter info in `.cache/uv/interpreter-v*`. After rebuilding `.pythonlibs`, that stale cache can still send installs to the nix store — and it ships to the deployment build container. Purge it (`rm -rf .cache/uv/interpreter-v*`) after any venv rebuild.
+
 **How to apply:** If uv install errors mention `/nix/store/...` destinations: `rm -rf .pythonlibs && uv venv --python <real nix python3.x binary> .pythonlibs && uv sync`. The project also needs a `[build-system]` in pyproject (plus `tool.uv.package = true`) for entry-point scripts like `google-ads-mcp` to be installed.
