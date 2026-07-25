@@ -14,8 +14,8 @@
 
 """Entry point for the MCP server.
 
-Runs in streamable-http mode. Middleware temporarily disabled for
-ClickUp MCP validation testing.
+Runs in streamable-http mode with automatic Accept header injection
+for clients (like ClickUp) that don't send it.
 """
 
 from ads_mcp.coordinator import mcp
@@ -33,8 +33,37 @@ from ads_mcp.resources import (
 
 import os
 import logging
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.middleware import Middleware
 
 logger = logging.getLogger(__name__)
+
+
+class AcceptHeaderMiddleware(BaseHTTPMiddleware):
+    """Injects Accept: text/event-stream if the client doesn't send it.
+
+    FastMCP's streamable-http transport requires this header, but some
+    MCP clients (like ClickUp) don't include it.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        accept = request.headers.get("accept", "")
+        if "text/event-stream" not in accept:
+            # Mutate the scope headers to include the required Accept header
+            headers = dict(request.scope["headers"])
+            new_headers = []
+            found_accept = False
+            for key, value in request.scope["headers"]:
+                if key == b"accept":
+                    new_headers.append((key, b"text/event-stream, " + value))
+                    found_accept = True
+                else:
+                    new_headers.append((key, value))
+            if not found_accept:
+                new_headers.append((b"accept", b"text/event-stream"))
+            request.scope["headers"] = new_headers
+        return await call_next(request)
 
 
 def run_server() -> None:
@@ -43,11 +72,11 @@ def run_server() -> None:
     logger.info(f"Starting Google Ads MCP server on port {port}")
 
     # Run in streamable-http mode for remote access
-    # API key middleware disabled temporarily for connection validation
     mcp.run(
         transport="streamable-http",
         port=port,
         host="0.0.0.0",
+        middleware=[Middleware(AcceptHeaderMiddleware)],
     )
 
 
