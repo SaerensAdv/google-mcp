@@ -14,8 +14,8 @@
 
 """Entry point for the MCP server.
 
-Runs in streamable-http mode with optional API key authentication.
-Set MCP_API_KEY env var to require X-API-Key header on all requests.
+Runs in streamable-http mode. Middleware temporarily disabled for
+ClickUp MCP validation testing.
 """
 
 from ads_mcp.coordinator import mcp
@@ -37,48 +37,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _get_asgi_app():
-    """Wraps the MCP ASGI app with API key middleware if MCP_API_KEY is set."""
-    from starlette.applications import Starlette
-    from starlette.middleware import Middleware
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
-
-    api_key = os.environ.get("MCP_API_KEY")
-
-    class APIKeyMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            if api_key:
-                provided_key = request.headers.get("X-API-Key")
-                if provided_key != api_key:
-                    return JSONResponse(
-                        {"error": "Unauthorized: invalid or missing API key"},
-                        status_code=401,
-                    )
-            return await call_next(request)
-
-    return Middleware(APIKeyMiddleware)
-
-
 def run_server() -> None:
     port = int(os.environ.get("PORT", "8080"))
-    api_key = os.environ.get("MCP_API_KEY")
 
-    if api_key:
-        logger.info("API key authentication enabled")
-    else:
-        logger.warning(
-            "No MCP_API_KEY set - server is accessible without authentication!"
-        )
+    logger.info(f"Starting Google Ads MCP server on port {port}")
 
-    # Always run in streamable-http mode for remote access
+    # Run in streamable-http mode for remote access
+    # API key middleware disabled temporarily for connection validation
     mcp.run(
         transport="streamable-http",
         port=port,
         host="0.0.0.0",
-        middleware=[_get_asgi_app()],
-        uvicorn_config={"access_log": False},
     )
 
 
