@@ -14,7 +14,8 @@
 
 """Entry point for the MCP server.
 
-Runs in streamable-http mode. All tools registered flat on the main instance.
+Runs in streamable-http mode with ASGI-level Accept header injection
+for clients (like ClickUp) that don't send Accept: text/event-stream.
 """
 
 from ads_mcp.coordinator import mcp
@@ -39,9 +40,10 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
-# ─── Tools registered directly on mcp ───────────────────────────────────────
+# --- Tools registered directly on mcp ---
 
 @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True))
 def list_accessible_customers() -> List[str]:
@@ -174,17 +176,47 @@ def get_resource_metadata(resource_name: str) -> Dict[str, Any]:
     }
 
 
-# ─── Server entry point ─────────────────────────────────────────────────────
+# --- ASGI middleware to inject Accept header ---
+
+class InjectAcceptHeader:
+    """Raw ASGI middleware that injects Accept: text/event-stream.
+
+    FastMCP's streamable-http transport requires clients to send this header,
+    but some MCP clients (like ClickUp) don't include it. This middleware
+    adds it at the ASGI level before FastMCP processes the request.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = list(scope.get("headers", []))
+            has_sse_accept = any(
+                k == b"accept" and b"text/event-stream" in v
+                for k, v in headers
+            )
+            if not has_sse_accept:
+                # Remove existing accept header and add one with text/event-stream
+                headers = [(k, v) for k, v in headers if k != b"accept"]
+                headers.append((b"accept", b"text/event-stream, */*"))
+                scope = dict(scope, headers=headers)
+        await self.app(scope, receive, send)
+
+
+# --- Server entry point ---
 
 def run_server() -> None:
+    import uvicorn
+
     port = int(os.environ.get("PORT", "8080"))
     logger.info(f"Starting Google Ads MCP server on port {port}")
 
-    mcp.run(
-        transport="streamable-http",
-        port=port,
-        host="0.0.0.0",
-    )
+    # Get the ASGI app from FastMCP and wrap it
+    app = mcp.http_app(transport="streamable-http")
+    wrapped_app = InjectAcceptHeader(app)
+
+    uvicorn.run(wrapped_app, host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":
