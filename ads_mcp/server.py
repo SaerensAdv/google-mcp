@@ -1,6 +1,9 @@
-"""MCP server for Google Ads API access via ClickUp.
+"""Unified MCP server for Google Ads + Google Search Console.
 
-Tools: ping, list_customers, search, get_resource_metadata
+Tools:
+  Google Ads: ping, list_customers, search, get_resource_metadata
+  GSC: gsc_list_properties, gsc_search_analytics, gsc_advanced_search_analytics,
+       gsc_performance_overview, gsc_compare_periods, gsc_search_by_page, gsc_inspect_url
 """
 
 from fastmcp import FastMCP
@@ -11,7 +14,11 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-mcp = FastMCP("Google Ads")
+mcp = FastMCP("Google MCP")
+
+# ---------------------------------------------------------------------------
+# Google Ads tools
+# ---------------------------------------------------------------------------
 
 
 @mcp.tool()
@@ -168,9 +175,28 @@ def get_resource_metadata(resource_name: str) -> Dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Google Search Console tools (registered from gsc_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from gsc_mcp.tools import register as register_gsc_tools
+    register_gsc_tools(mcp)
+    logger.info("GSC tools registered successfully")
+except ImportError as e:
+    logger.warning(f"GSC tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"GSC tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Server entrypoint
+# ---------------------------------------------------------------------------
+
+
 def run_server() -> None:
     port = int(os.environ.get("PORT", "8080"))
-    logger.info(f"Starting Google Ads MCP server on port {port}")
+    logger.info(f"Starting Google MCP server on port {port}")
 
     mcp.run(
         transport="streamable-http",
