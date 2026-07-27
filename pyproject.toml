@@ -3,14 +3,14 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*"]
+include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*", "psi_mcp*"]
 
 [tool.uv]
 package = true
 
 [project]
 name = "google-mcp"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [
@@ -22,12 +22,13 @@ dependencies = [
     "google-auth-oauthlib>=1.0.0",
     "google-analytics-data>=0.18.0",
     "google-analytics-admin>=0.22.0",
+    "httpx>=0.27.0",
 ]
 
-description = "Unified MCP Server for Google Ads, Google Search Console, and Google Analytics 4."
+description = "Unified MCP Server for Google Ads, Search Console, Analytics 4, and PageSpeed Insights."
 readme = "README.md"
 authors = [{ name = "Axel Saerens", email = "axel@saerensadvertising.com" }]
-keywords = ["Google Ads", "Google Search Console", "Google Analytics", "MCP", "SEO"]
+keywords = ["Google Ads", "Google Search Console", "Google Analytics", "PageSpeed", "MCP", "SEO"]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
