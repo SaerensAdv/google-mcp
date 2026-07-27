@@ -1,9 +1,11 @@
-"""Unified MCP server for Google Ads + Google Search Console.
+"""Unified MCP server for Google Ads + Google Search Console + Google Analytics 4.
 
 Tools:
   Google Ads: ping, list_customers, search, get_resource_metadata
   GSC: gsc_list_properties, gsc_search_analytics, gsc_advanced_search_analytics,
        gsc_performance_overview, gsc_compare_periods, gsc_search_by_page, gsc_inspect_url
+  GA4: ga4_list_properties, ga4_run_report, ga4_traffic_overview,
+       ga4_traffic_sources, ga4_top_pages, ga4_conversions, ga4_landing_pages
 """
 
 from fastmcp import FastMCP
@@ -187,6 +189,20 @@ except ImportError as e:
     logger.warning(f"GSC tools not loaded (missing dependencies): {e}")
 except Exception as e:
     logger.warning(f"GSC tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Google Analytics 4 tools (registered from ga4_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from ga4_mcp.tools import register as register_ga4_tools
+    register_ga4_tools(mcp)
+    logger.info("GA4 tools registered successfully")
+except ImportError as e:
+    logger.warning(f"GA4 tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"GA4 tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------
