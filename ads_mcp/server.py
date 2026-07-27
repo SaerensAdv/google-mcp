@@ -1,4 +1,4 @@
-"""Unified MCP server for Google Ads + Google Search Console + Google Analytics 4.
+"""Unified MCP server for Google Ads + Google Search Console + Google Analytics 4 + PageSpeed Insights.
 
 Tools:
   Google Ads: ping, list_customers, search, get_resource_metadata
@@ -6,6 +6,7 @@ Tools:
        gsc_performance_overview, gsc_compare_periods, gsc_search_by_page, gsc_inspect_url
   GA4: ga4_list_properties, ga4_run_report, ga4_traffic_overview,
        ga4_traffic_sources, ga4_top_pages, ga4_conversions, ga4_landing_pages
+  PSI: psi_analyze
 """
 
 from fastmcp import FastMCP
@@ -203,6 +204,20 @@ except ImportError as e:
     logger.warning(f"GA4 tools not loaded (missing dependencies): {e}")
 except Exception as e:
     logger.warning(f"GA4 tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# PageSpeed Insights tools (registered from psi_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from psi_mcp.tools import register as register_psi_tools
+    register_psi_tools(mcp)
+    logger.info("PSI tools registered successfully")
+except ImportError as e:
+    logger.warning(f"PSI tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"PSI tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------
