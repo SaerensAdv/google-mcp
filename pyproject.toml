@@ -3,26 +3,29 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["ads_mcp*"]
+include = ["ads_mcp*", "gsc_mcp*"]
 
 [tool.uv]
 package = true
 
 [project]
-name = "google-ads-mcp"
-version = "0.0.1"
-requires-python = ">=3.10"
+name = "google-mcp"
+version = "0.1.0"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [
     "google-ads>=31.0.0",
     "mcp[cli]>=1.2.0",
-    "fastmcp>=3.2.0"
+    "fastmcp>=3.2.0",
+    "google-api-python-client>=2.100.0",
+    "google-auth>=2.20.0",
+    "google-auth-oauthlib>=1.0.0",
 ]
 
-description = "MCP Server for Google Ads, depends on Google Ads API."
+description = "Unified MCP Server for Google Ads and Google Search Console."
 readme = "README.md"
-authors = [{ name = "Dean Lukies", email = "lukiesd@users.noreply.github.com" }]
-keywords = ["Google Ads", "Google Ads API", "MCP"]
+authors = [{ name = "Axel Saerens", email = "axel@saerensadvertising.com" }]
+keywords = ["Google Ads", "Google Search Console", "MCP", "SEO"]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
@@ -36,10 +39,10 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/googleads/google-ads-mcp"
-repository = "https://github.com/googleads/google-ads-mcp.git"
-issues = "https://github.com/googleads/google-ads-mcp/issues"
+homepage = "https://github.com/SaerensAdv/google-mcp"
+repository = "https://github.com/SaerensAdv/google-mcp.git"
+issues = "https://github.com/SaerensAdv/google-mcp/issues"
 
 [project.scripts]
+google-mcp = "ads_mcp.server:run_server"
 google-ads-mcp = "ads_mcp.server:run_server"
-google-ads-mcp-update-gaql = "ads_mcp.update_references:update_gaql_resource_file"
