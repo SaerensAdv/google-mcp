@@ -1,11 +1,10 @@
 """Google Analytics 4 authentication via refresh token.
 
-Expects these environment variables in Replit Secrets:
-- GA4_CLIENT_ID
-- GA4_CLIENT_SECRET
-- GA4_REFRESH_TOKEN
+Reuses GSC credentials by default (same OAuth app, same token).
+Falls back to GA4-specific env vars if set.
 
-Optionally reuses the same OAuth app as Google Ads/GSC.
+Looks for: GA4_CLIENT_ID / GA4_CLIENT_SECRET / GA4_REFRESH_TOKEN
+Fallback:  GSC_CLIENT_ID / GSC_CLIENT_SECRET / GSC_REFRESH_TOKEN
 """
 
 import os
@@ -26,14 +25,14 @@ _admin_client_cache = None
 
 def _get_credentials():
     """Build and refresh OAuth2 credentials from env vars."""
-    client_id = os.environ.get("GA4_CLIENT_ID")
-    client_secret = os.environ.get("GA4_CLIENT_SECRET")
-    refresh_token = os.environ.get("GA4_REFRESH_TOKEN")
+    client_id = os.environ.get("GA4_CLIENT_ID") or os.environ.get("GSC_CLIENT_ID")
+    client_secret = os.environ.get("GA4_CLIENT_SECRET") or os.environ.get("GSC_CLIENT_SECRET")
+    refresh_token = os.environ.get("GA4_REFRESH_TOKEN") or os.environ.get("GSC_REFRESH_TOKEN")
 
     if not all([client_id, client_secret, refresh_token]):
         raise EnvironmentError(
-            "Missing GA4 credentials. Set GA4_CLIENT_ID, GA4_CLIENT_SECRET, "
-            "and GA4_REFRESH_TOKEN in Replit Secrets."
+            "Missing GA4/GSC credentials. Set GA4_CLIENT_ID, GA4_CLIENT_SECRET, "
+            "GA4_REFRESH_TOKEN (or their GSC_ equivalents) in Replit Secrets."
         )
 
     creds = Credentials(
