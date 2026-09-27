@@ -22,6 +22,8 @@ CLICKUP_UPLOAD_ENABLED = "true"
 
 [userenv.production]
 BROWSER_SCREENSHOT_BASE_URL = "https://sa-google-ads-mcp.replit.app"
+CLICKUP_UPLOAD_ALLOWED_LIST_IDS = "901526435917"
+CLICKUP_UPLOAD_ENABLED = "true"
 
 [workflows]
 runButton = "Project"
