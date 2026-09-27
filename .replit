@@ -15,6 +15,12 @@ PORT = "8080"
 BROWSER_TOOL_ALLOW_UNAUTHENTICATED = "true"
 BROWSER_TOOL_ENABLED = "true"
 
+[userenv.development]
+BROWSER_SCREENSHOT_BASE_URL = "https://2f79b25f-d766-4740-9031-fdcc17e33f7d-00-2o5h6245ycod4.janeway.replit.dev"
+
+[userenv.production]
+BROWSER_SCREENSHOT_BASE_URL = "https://sa-google-ads-mcp.replit.app"
+
 [workflows]
 runButton = "Project"
 
@@ -42,6 +48,10 @@ outputType = "console"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[[ports]]
+localPort = 8090
+externalPort = 3000
 
 [[ports]]
 localPort = 8099

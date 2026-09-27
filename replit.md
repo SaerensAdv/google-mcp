@@ -47,6 +47,11 @@ Code in `browser_mcp/` (headless Nix Chromium via Playwright). Params: `url` (pu
 - Chromium launch timeout 45s (`BROWSER_LAUNCH_TIMEOUT_MS`); launch failures are logged and classified (timeout / sandbox / other).
 - Pages taller than 8000px are downscaled (not cropped) up to 20000px; taller → labelled viewport fallback.
 
+Temporary download link (compatibility test for ClickUp, `browser_mcp/linkstore.py`):
+- Adds `screenshot_url` + `expires_at` to the metadata, next to the unchanged MCP image content. Route `GET /browser-screenshots/<192-bit token>`, max 10 min, cap 20 images / 50 MB, private temp dir, tokens redacted from access logs.
+- Only when `BROWSER_SCREENSHOT_BASE_URL` (bare https origin; set per environment) is set and the host is in `BROWSER_SCREENSHOT_LINK_HOSTS` (default `abonnement.website`).
+- Relies on a single server process (VM, one worker): the index lives in memory.
+
 Activation (env vars):
 - `BROWSER_TOOL_ENABLED=true` **and** either `MCP_INBOUND_AUTH=api_key` (recommended) or `BROWSER_TOOL_ALLOW_UNAUTHENTICATED=true`.
 - Rollback: remove `BROWSER_TOOL_ENABLED` (tool is not registered at all).

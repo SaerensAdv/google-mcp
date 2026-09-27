@@ -50,6 +50,45 @@ def register(mcp) -> bool:
         logger.info("browser_screenshot registered: %s", reason)
 
     from browser_mcp.capture import CaptureError, capture
+    from browser_mcp import linkstore
+
+    linkstore.install_log_redaction()
+
+    @mcp.custom_route(linkstore.ROUTE_PREFIX + "{token}", methods=["GET"], include_in_schema=False)
+    async def browser_screenshot_download(request):
+        from starlette.responses import Response
+
+        data = linkstore.store.get(request.path_params.get("token", ""))
+        if data is None:
+            return Response(
+                "Not found or expired.", status_code=404, media_type="text/plain",
+                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+            )
+        return Response(data, media_type="image/jpeg", headers={
+            "Content-Disposition": 'inline; filename="screenshot.jpg"',
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+        })
+
+    def _add_download_link(meta: dict, image: bytes) -> None:
+        meta["screenshot_url"] = None
+        meta["expires_at"] = None
+        base = linkstore.public_base_url()
+        if not base:
+            meta["screenshot_url_note"] = "Geen downloadlink: BROWSER_SCREENSHOT_BASE_URL niet ingesteld."
+            return
+        if not (linkstore.link_allowed_for(meta.get("requested_url", ""))
+                and linkstore.link_allowed_for(meta.get("final_url", ""))):
+            meta["screenshot_url_note"] = "Geen downloadlink: host staat niet in de testlijst."
+            return
+        stored = linkstore.store.put(image)
+        if stored is None:
+            meta["screenshot_url_note"] = "Geen downloadlink: afbeelding te groot voor tijdelijke opslag."
+            return
+        token, expires = stored
+        meta["screenshot_url"] = f"{base}{linkstore.ROUTE_PREFIX}{token}"
+        meta["expires_at"] = linkstore.iso(expires)
 
     @mcp.tool()
     async def browser_screenshot(
@@ -81,6 +120,11 @@ def register(mcp) -> bool:
                 is_error=True,
             )
         meta = result.metadata
+        try:
+            _add_download_link(meta, result.image)
+        except Exception as e:  # noqa: BLE001 — the MCP image result must still be returned
+            logger.warning("screenshot download link failed: %s", type(e).__name__)
+            meta["screenshot_url_note"] = "Geen downloadlink: interne fout bij tijdelijke opslag."
         summary = (
             f"Screenshot van {meta['final_url']} ({meta['device']}, "
             f"{meta['viewport']['width']}x{meta['viewport']['height']}, mode={meta['capture_mode']}).\n"

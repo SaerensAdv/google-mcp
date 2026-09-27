@@ -1,0 +1,56 @@
+De live browser_screenshot-aanroep vanuit ClickUp is geslaagd:
+- https://abonnement.website/
+- Desktop, volledige pagina.
+- JPEG 1284×8000, ongeveer 577 KB.
+- browser_sandbox=true.
+- Duur 37,41 seconden.
+
+Maar ClickUp Brain ontvangt alleen de metadata en “[image: image/jpeg]”, niet een zichtbaar te beoordelen afbeelding.
+
+DOEL
+Voeg naast de bestaande MCP-afbeeldingsrespons een tijdelijk downloadbare screenshot-URL toe. Daarmee testen we of de afbeelding via een andere route in ClickUp zichtbaar wordt. Dit is een compatibiliteitstest, geen bewezen oplossing.
+
+SCOPE
+- Behoud de bestaande MCP image content en metadata.
+- Voeg screenshot_url en expires_at toe.
+- Gebruik de bestaande server, geen nieuwe app, opslagdienst of betaald abonnement.
+- Geen wijzigingen aan browserlaunch, sandbox, Google-tools of bestaande authenticatie-instellingen.
+
+IMPLEMENTATIE
+1. Bewaar de gemaakte JPEG tijdelijk buiten publiek gemounte mappen.
+2. Maak een afzonderlijke HTTPS-route die uitsluitend die afbeelding teruggeeft:
+   - Content-Type: image/jpeg.
+   - Content-Disposition: inline.
+   - Cache-Control: no-store.
+   - X-Content-Type-Options: nosniff.
+3. Gebruik per afbeelding een cryptografisch willekeurige identifier, minimaal 128 bits. Geen voorspelbare namen, directorylisting of toegang via willekeurige bestandspaden.
+4. Laat de link maximaal 10 minuten werken. Controleer verval bij ieder verzoek, ook wanneer fysieke opruiming nog niet gebeurd is.
+5. Verwijder verlopen afbeeldingen automatisch. Begrens de opslag, bijvoorbeeld maximaal 20 afbeeldingen en 50 MB totaal.
+6. Gebruik een expliciet ingestelde publieke server-origin voor de URL, niet blind de Host-header van een verzoek.
+
+PRIVACY EN TOEGANG
+- Geen API-sleutels, Google-tokens, oorspronkelijke website-URL of andere gevoelige gegevens in de download-URL.
+- Iedereen met de tijdelijke link kan de afbeelding bekijken. De willekeurige identifier is dus een tijdelijke toegangscode, geen volwaardige authenticatie.
+- Log die identifier of volledige downloadlink niet.
+- Alleen voor screenshots van publieke pagina’s, zonder login.
+- Gebruik voor deze test uitsluitend https://abonnement.website.
+- Geen permanente openbare screenshotbibliotheek.
+
+DEPLOYMENT
+Controleer of tijdelijke lokale bestanden op het huidige deploymenttype betrouwbaar via dezelfde publieke route kunnen worden opgehaald. Als meerdere processen/instances dat verhinderen, meld de beperking en stop vóór je externe opslag of een grotere architectuur bouwt.
+
+TESTS
+- Een echte capture levert nog steeds MCP image content én de nieuwe URL.
+- De URL geeft dezelfde decodeerbare JPEG terug.
+- Herhaald ophalen binnen de geldigheid werkt, zodat een linkpreview de afbeelding niet “opgebruikt”.
+- Verlopen en onbekende links geven geen afbeelding terug.
+- Padmanipulatie wordt geweigerd.
+- Opslaglimieten en opruiming werken.
+- Bestaande Google-tools blijven werken.
+
+OPLEVERING
+Rapporteer kort gewijzigde bestanden, testresultaten, benodigde configuratie en resterende beperkingen.
+
+Claim niet dat ClickUp de afbeelding nu kan zien: dat testen we na publicatie vanuit ClickUp zelf. Als dat niet werkt, niet automatisch verder bouwen.
+
+Niet publiceren; wacht op mijn akkoord.
