@@ -52,6 +52,13 @@ Temporary download link (compatibility test for ClickUp, `browser_mcp/linkstore.
 - Only when `BROWSER_SCREENSHOT_BASE_URL` (bare https origin; set per environment) is set and the host is in `BROWSER_SCREENSHOT_LINK_HOSTS` (default `abonnement.website`).
 - Relies on a single server process (VM, one worker): the index lives in memory.
 
+ClickUp upload (`browser_screenshot_to_clickup`, `browser_mcp/clickup_upload.py`) — OFF unless fully configured:
+- Uploads the JPEG as an attachment to an EXISTING ClickUp task (API v2 `POST /task/{id}/attachment`). Never creates tasks/comments.
+- Registered only with `CLICKUP_UPLOAD_ENABLED=true` + secrets `CLICKUP_API_TOKEN`, `SCREENSHOT_UPLOAD_KEY` + env `CLICKUP_UPLOAD_ALLOWED_LIST_IDS` (comma-separated).
+- Every call needs header `X-Screenshot-Upload-Key` (checked per HTTP request, before capture). Task Home List is read from ClickUp and must be allowlisted.
+- Duplicate protection via `request_id`: on-disk registry (`~/.cache/screenshot-upload/registry.json`, max 2000 / 180 days) + tag in attachment filename.
+- Disable only this tool: set `CLICKUP_UPLOAD_ENABLED=false` (or remove it) and restart/republish.
+
 Activation (env vars):
 - `BROWSER_TOOL_ENABLED=true` **and** either `MCP_INBOUND_AUTH=api_key` (recommended) or `BROWSER_TOOL_ALLOW_UNAUTHENTICATED=true`.
 - Rollback: remove `BROWSER_TOOL_ENABLED` (tool is not registered at all).

@@ -141,4 +141,63 @@ def register(mcp) -> bool:
             ]
         )
 
+    _register_clickup_upload(mcp, capture)
+    return True
+
+
+def _register_clickup_upload(mcp, capture_fn) -> bool:
+    from browser_mcp import clickup_upload as cu
+
+    enabled, reason = cu.upload_gate()
+    if not enabled:
+        logger.info("browser_screenshot_to_clickup NOT registered: %s", reason)
+        return False
+    logger.info("browser_screenshot_to_clickup registered (lists: %d)", len(cu.allowed_list_ids()))
+
+    @mcp.tool()
+    async def browser_screenshot_to_clickup(
+        url: str,
+        task_id: str,
+        request_id: str,
+        device: Literal["desktop", "mobile"] = "desktop",
+        full_page: bool = False,
+    ) -> ToolResult:
+        """Takes a screenshot of a PUBLIC https website and uploads the JPEG as an attachment
+        to an EXISTING ClickUp task. Requires a pre-configured connection key; tasks must be in
+        an approved List. Does not create tasks, comments or messages.
+
+        Args:
+            url: Public https URL to capture.
+            task_id: ID of an existing ClickUp task (regular task ID, e.g. "86abc123x").
+            request_id: Unique ID for this upload (8-100 chars). Retrying with the same
+                request_id and the same input never uploads twice; different input is refused.
+            device: "desktop" (1440x900) or "mobile" (390x844 emulation).
+            full_page: False (default) = first viewport only (readable); True = whole page.
+
+        Returns JSON with capture_ok / upload_ok / upload_verified, attachment_id,
+        attachment_url, task_url and capture metadata.
+        """
+        from fastmcp.server.dependencies import get_http_request
+
+        try:
+            request = get_http_request()
+        except RuntimeError:
+            request = None
+        try:
+            result = await cu.screenshot_to_clickup(
+                request=request, url=url, task_id=task_id, device=device,
+                full_page=full_page, request_id=request_id, capture_fn=capture_fn,
+            )
+        except cu.UploadRefused as e:
+            return ToolResult(content=[TextContent(type="text", text=str(e))], is_error=True)
+        except Exception as e:  # noqa: BLE001 — never leak internals/secrets
+            logger.warning("browser_screenshot_to_clickup failed: %s", type(e).__name__)
+            return ToolResult(content=[TextContent(
+                type="text", text="browser_screenshot_to_clickup: interne fout; niets bevestigd."
+            )], is_error=True)
+        return ToolResult(
+            content=[TextContent(type="text", text=json.dumps(result, ensure_ascii=False, indent=2))],
+            is_error=not result.get("upload_ok"),
+        )
+
     return True

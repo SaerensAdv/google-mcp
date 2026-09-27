@@ -1,0 +1,101 @@
+Werk de bestaande screenshotfunctie af met upload naar een ClickUp-prospecttaak. Geen nieuwe browseroplossing, externe opslag of grotere verbouwing.
+
+CONTEXT
+browser_screenshot werkt live en maakt echte JPEG’s met Chromium-sandbox. Maar ClickUp Brain ontvangt de MCP-afbeelding niet visueel; een externe downloadlink lost dat evenmin op.
+
+We willen daarom het afbeeldingsbestand rechtstreeks als ClickUp-taakbijlage uploaden en de attachment-ID en URL teruggeven. Brain kan vervolgens proberen die bijlage te openen.
+
+DOEL
+Eén aantoonbare keten:
+bestaande test-/prospecttaak → screenshot → echte ClickUp-bijlage → visuele controle door Brain.
+
+Claim pas end-to-end succes nadat Brain de bijlage daadwerkelijk heeft bekeken. Een geslaagde upload alleen is onvoldoende.
+
+1. BEHOUD WAT WERKT
+- Geen wijzigingen aan Ads, GA4, GSC, PSI of hun bestaande toegang.
+- Behoud de bestaande browser_screenshot-tool.
+- Behoud Chromium-sandbox, netwerkbeveiliging, timeouts, concurrencylimiet en procesopruiming.
+- Hergebruik de bestaande capturecode.
+- Geen automatische aanmaak van prospects, taken, comments of berichten.
+- Geen nieuwe betaalde dienst, app of hostingupgrade.
+
+2. VOEG EEN GERICHTE UPLOADFUNCTIE TOE
+Voorgestelde tool: browser_screenshot_to_clickup.
+
+Input:
+- url: publieke HTTPS-website.
+- task_id: bestaande, expliciet gekozen ClickUp-taak.
+- device: desktop of mobile.
+- full_page: boolean.
+- request_id: identificatie om dubbele uploads bij retries te voorkomen.
+
+Werking:
+- Valideer uploadrechten en bestemming vóór een browser gestart wordt.
+- Maak de screenshot.
+- Upload de daadwerkelijke afbeeldingsbytes via de officiële ClickUp Create Task Attachment API, als multipart/form-data.
+- Upload geen tekstbestand of externe link als vervanging.
+- Verifieer de huidige API-specificatie voordat je implementeert.
+
+Output:
+- ClickUp attachment-ID en attachment-URL zoals de API die teruggeeft.
+- Task-ID en taak-URL indien beschikbaar.
+- Bron-URL, uiteindelijke URL, capturetijd, device, viewport, afbeeldingsafmetingen en eventuele verkleining.
+- Duidelijk onderscheid tussen capture geslaagd, upload geslaagd en upload geverifieerd.
+
+Gebruik een leesbare bestandsnaam met domein, device en UTC-tijdstip, zonder queryparameters.
+
+3. BEVEILIG ALLEEN DE NIEUWE SCHRIJFACTIE
+De bestaande MCP-server heeft bewust geen inbound-authenticatie. Maak daarom NOOIT een anoniem bruikbare ClickUp-uploadtool.
+
+- Bewaar CLICKUP_API_TOKEN uitsluitend in Replit Secrets; bij voorkeur van een account met toegang tot alleen de benodigde bestemming.
+- Vereis voor de nieuwe uploadtool een aparte geheime requestheader, bijvoorbeeld X-Screenshot-Upload-Key.
+- Bewaar de verwachte sleutel in Replit Secrets en voer de headerwaarde uitsluitend in de beveiligde ClickUp-verbindingsinstellingen in.
+- Geen sleutels in toolargumenten, prompts, URL’s, antwoorden of logs.
+- Laat bestaande Google-tools zonder deze extra header blijven werken.
+- Controleer de header bij elke uploadaanroep, ook binnen een bestaande MCP-sessie.
+- Ontbrekende of verkeerde sleutel: weigeren vóór capture of upload.
+- Geef die header en het ClickUp-token nooit door aan Chromium of websites.
+
+Beperk daarnaast uploads server-side tot vooraf ingestelde ClickUp-Lists. Controleer de Home List van de opgegeven taak via ClickUp; vertrouw niet op een door de aanroeper meegestuurde List-ID.
+
+Ontbreken secrets of toegestane bestemmingen? Houd de uploadfunctie uitgeschakeld en meld welke configuratie nodig is. Verzin geen taak of bestemming.
+
+Als de huidige MCP-library geen betrouwbare per-aanroep headercontrole ondersteunt, stop dan en leg dat concreet uit. Bouw geen onbeveiligde fallback.
+
+4. HERSTEL EN DUBBELE UPLOADS
+- Dezelfde request_id met dezelfde input mag niet opnieuw uploaden.
+- Dezelfde request_id met andere input moet worden geweigerd.
+- Bewaar een begrensd uploadregister zodat retries en herstarts niet zomaar duplicaten veroorzaken.
+- Bij onzekere uploaduitkomst: controleer eerst de taakbijlagen; niet blind opnieuw uploaden.
+- Als capture lukt maar upload faalt, meld dat afzonderlijk.
+- Verwijder tijdelijke bestanden volgens een begrensde opruimpolicy.
+- Geen automatische verwijdering van ClickUp-bijlagen.
+
+5. TEST KLEIN
+Eerst lokale/geïsoleerde tests:
+- Ontbrekende/verkeerde uploadheader geweigerd.
+- Niet-toegestane taak geweigerd.
+- Geen secrets in logs of browseromgeving.
+- Herhaalde request_id maakt geen dubbele bijlage.
+- Bestaande Google-tools blijven werken.
+- Browserbeveiliging en procesopruiming blijven intact.
+
+Daarna één echte upload, uitsluitend naar een door mij opgegeven testtaak:
+- https://abonnement.website
+- Desktop, full_page=false, zodat tekst en details leesbaar blijven.
+- Controleer dat de taak een echte JPEG-bijlage bevat en dat deze decodeerbaar is.
+- Geef attachment-ID en URL terug voor de test vanuit ClickUp Brain.
+
+Geen bulkprospecting of volledige screenshotreeksen.
+
+6. OPLEVERING EN PUBLICATIE
+Geef:
+- Gewijzigde bestanden.
+- Testresultaten en wat nog niet getest is.
+- Exacte secret-/configuratienamen en de in ClickUp in te stellen headernaam, zonder geheime waarden.
+- Nog benodigde testtaak en toegestane List.
+- Instructies om uitsluitend de uploadfunctie uit te schakelen zonder bestaande tools te verstoren.
+
+Niet publiceren en geen echte ClickUp-upload uitvoeren voordat ik de testbestemming en uitvoering heb goedgekeurd.
+
+Dit is de laatste integratiestap: geen extra features. Als Brain de echte ClickUp-bijlage daarna nog niet kan bekijken, rapporteer die grens en stop.
