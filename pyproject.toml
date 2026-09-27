@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*", "psi_mcp*"]
+include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*", "psi_mcp*", "browser_mcp*"]
 
 [tool.uv]
 package = true
@@ -23,6 +23,7 @@ dependencies = [
     "google-analytics-data>=0.18.0",
     "google-analytics-admin>=0.22.0",
     "httpx>=0.27.0",
+    "playwright>=1.63.0",
 ]
 
 description = "Unified MCP Server for Google Ads, Search Console, Analytics 4, and PageSpeed Insights."

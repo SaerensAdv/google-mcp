@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "J0pfDbYtd2v8S41D1kPB_"
+uri = "file://screenshots_test/mcp_desktop_full.jpg"
+type = "image"
+title = "MCP-test: desktop full page"
+description = "Screenshot van https://abonnement.website, ontvangen als MCP-image via browser_screenshot (1440 breed, verkleind naar 1284×8000)."
+logical_id = "4c744f1b-a03d-4e11-8476-4ef8da1a04cb"
+content_hash = "sha256:e161e7cdb0f76e9a0447e0f114936e49d4c01c87831d6d722fd71a44c4ac92d2"
+size = 576701
+mtime_ms = 1790504300083
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:2f79b25f-d766-4740-9031-fdcc17e33f7d/4c744f1b-a03d-4e11-8476-4ef8da1a04cb/b60f9d73-8542-470f-a7dd-62d463fc43e8"
+storage_version_token = "1790504739184877"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "Is_niTB065ty-Dg74rC_q"
+uri = "file://screenshots_test/mcp_mobile_full.jpg"
+type = "image"
+title = "MCP-test: mobiel full page"
+description = "Mobiele emulatie 390×844, volledige pagina verkleind naar 228×7999 (pagina is 13.693px hoog)."
+logical_id = "aa47700c-8fd6-4775-89c7-96a81a30ce02"
+content_hash = "sha256:0735c2837ad8b03d0f05aed196b74ce4545d8cbca7780630c7688b978c226906"
+size = 219264
+mtime_ms = 1790504311520
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:2f79b25f-d766-4740-9031-fdcc17e33f7d/aa47700c-8fd6-4775-89c7-96a81a30ce02/8d372ec8-a7fd-49ca-88a4-4f410d167953"
+storage_version_token = "1790504739893072"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "Of3qV90Sxyd6Z5pIBg53Y"
+uri = "file://screenshots_test/desktop_viewport.jpg"
+type = "image"
+title = "Desktop viewport (1440×900)"
+description = "Alleen het eerste scherm, op ware grootte, met cookiebanner zoals een nieuwe bezoeker die ziet."
+logical_id = "86746480-193f-44d4-a99b-9cc6b8cb4970"
+content_hash = "sha256:65cecdf6372c9552e32bc83f381da4ec8097d007ff246a39e928527d6b98179c"
+size = 95005
+mtime_ms = 1790504057608
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:2f79b25f-d766-4740-9031-fdcc17e33f7d/86746480-193f-44d4-a99b-9cc6b8cb4970/a34c6f0a-eda3-4439-a692-6b0a1888703b"
+storage_version_token = "1790504740715341"
+content_type = "image/jpeg"

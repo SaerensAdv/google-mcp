@@ -221,18 +221,37 @@ except Exception as e:
 
 
 # ---------------------------------------------------------------------------
+# Browser screenshot tool (browser_mcp module) — disabled by default, see
+# browser_mcp/tools.py for the activation gate.
+# ---------------------------------------------------------------------------
+
+try:
+    from browser_mcp.tools import register as register_browser_tools
+    register_browser_tools(mcp)
+except ImportError as e:
+    logger.warning(f"Browser tool not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Browser tool failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
 # Server entrypoint
 # ---------------------------------------------------------------------------
 
 
 def run_server() -> None:
+    from ads_mcp.inbound_auth import build_middleware
+
     port = int(os.environ.get("PORT", "8080"))
     logger.info(f"Starting Google MCP server on port {port}")
 
+    middleware = build_middleware()
+    run_kwargs = {"middleware": middleware} if middleware else {}
     mcp.run(
         transport="streamable-http",
         port=port,
         host="0.0.0.0",
+        **run_kwargs,
     )
 
 

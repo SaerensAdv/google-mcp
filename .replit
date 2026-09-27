@@ -2,6 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["chromium", "dejavu_fonts", "gitFull", "liberation_ttf"]
 
 [agent]
 expertMode = true
@@ -39,6 +40,10 @@ outputType = "console"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[[ports]]
+localPort = 8099
+externalPort = 8099
 
 [deployment]
 deploymentTarget = "vm"

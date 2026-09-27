@@ -1,1 +1,2 @@
+- [Browser screenshot tool](browser-tool.md) — gated off (no inbound auth live, by user choice); Nix Chromium + pip Playwright; slow scroll for reveal animations.
 - [uv deployment venv fix](uv-deploy-venv.md) — `.pythonlibs` must be a uv venv built on the real nix Python (not the wrapper) or `uv sync`/publish fails with nix-store permission errors.
