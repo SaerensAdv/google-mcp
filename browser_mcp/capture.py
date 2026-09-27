@@ -38,6 +38,8 @@ VIEWPORTS = {
 }
 
 NAV_TIMEOUT_MS = _env_int("BROWSER_NAV_TIMEOUT_MS", 25_000)
+# Chromium start can be slow on a cold (just-published) VM: first read of the binary from disk.
+LAUNCH_TIMEOUT_MS = _env_int("BROWSER_LAUNCH_TIMEOUT_MS", 45_000)
 TOTAL_TIMEOUT_S = _env_int("BROWSER_TOTAL_TIMEOUT_S", 60)
 FONT_WAIT_S = 5
 SCROLL_MAX_STEPS = 30
@@ -138,6 +140,34 @@ def _is_browser_internal(target: str) -> bool:
     return host in _BROWSER_INTERNAL_HOSTS
 
 
+# Chromium stderr markers that mean "no usable sandbox" (as opposed to a slow or broken start).
+_SANDBOX_FAILURE_MARKERS = (
+    "sandbox helper binary", "no usable sandbox", "suid sandbox", "setuid_sandbox",
+    "credentials.cc", "zygote_host", "namespace_sandbox", "sandbox_linux",
+)
+
+
+def _launch_diagnostic(exc: Exception) -> str:
+    """Short, log-safe excerpt of a launch failure (Chromium's env holds no secrets)."""
+    lines = [ln.strip().lstrip("- ") for ln in str(exc).splitlines()]
+    keep = list(dict.fromkeys(
+        ln for ln in lines if "FATAL" in ln or "ERROR:" in ln or "exitCode" in ln
+    ))[:6]
+    first = lines[0] if lines else ""
+    return (first + " | " + " | ".join(keep))[:1500]
+
+
+def _classify_launch_error(exc: Exception) -> str:
+    from playwright.async_api import TimeoutError as PWTimeout
+
+    if isinstance(exc, PWTimeout):
+        return "timeout"
+    text = str(exc).lower()
+    if any(m in text for m in _SANDBOX_FAILURE_MARKERS):
+        return "sandbox"
+    return "other"
+
+
 def _safe_url_for_log(url: str) -> str:
     p = urlsplit(url)
     return f"{p.scheme}://{p.hostname}{p.path}"
@@ -158,7 +188,7 @@ async def hardened_page(device: str) -> AsyncIterator[tuple]:
         launch_kwargs = dict(
             executable_path=chromium_path(),
             headless=True,
-            timeout=20_000,
+            timeout=LAUNCH_TIMEOUT_MS,
             env=_browser_env(),
             args=[
                 f"--proxy-server=http://127.0.0.1:{proxy.port}",
@@ -184,9 +214,25 @@ async def hardened_page(device: str) -> AsyncIterator[tuple]:
                 "MediaRouter,Translate,PushMessaging,AutofillServerCommunication",
             ],
         )
+        launch_started = time.monotonic()
         try:
             browser = await pw.chromium.launch(chromium_sandbox=True, **launch_kwargs)
         except Exception as e:  # noqa: BLE001
+            kind = _classify_launch_error(e)
+            elapsed = time.monotonic() - launch_started
+            logger.warning(
+                "Chromium launch failed (kind=%s, %s, after %.1fs): %s",
+                kind, type(e).__name__, elapsed, _launch_diagnostic(e),
+            )
+            if kind == "timeout":
+                raise CaptureError(
+                    f"Chromium startte niet binnen {LAUNCH_TIMEOUT_MS // 1000}s "
+                    "(trage start van de server); probeer het opnieuw."
+                ) from e
+            if kind != "sandbox":
+                raise CaptureError(
+                    f"Chromium kon niet starten ({type(e).__name__}); zie serverlog."
+                ) from e
             if not _truthy_env("BROWSER_ALLOW_NO_SANDBOX"):
                 raise CaptureError(
                     "Chromium-sandbox is niet beschikbaar op deze server; capture geweigerd. "
@@ -195,6 +241,10 @@ async def hardened_page(device: str) -> AsyncIterator[tuple]:
             logger.warning("Chromium sandbox unavailable; running unsandboxed (explicitly allowed).")
             sandboxed = False
             browser = await pw.chromium.launch(chromium_sandbox=False, **launch_kwargs)
+        logger.info(
+            "Chromium %s started in %.1fs (sandbox=%s)",
+            browser.version, time.monotonic() - launch_started, sandboxed,
+        )
         major = browser.version.split(".")[0]
         if vp["is_mobile"]:
             ua = (

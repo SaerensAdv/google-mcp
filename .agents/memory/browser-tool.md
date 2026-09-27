@@ -9,3 +9,7 @@ description: Why browser_screenshot is gated, how Chromium runs here, and captur
   **How to apply:** never flip MCP_INBOUND_AUTH or BROWSER_TOOL_ENABLED yourself.
 - Scroll-reveal sites (e.g. abonnement.website) render blank sections in full-page captures unless scrolling is slow (~400ms per 0.8 viewport) and starts after network idle (React content renders after `load`).
 - When testing process cleanup, `pgrep -f <pattern>` also matches the calling shell if the pattern appears in the command/heredoc — match the exact Chromium binary path.
+
+## Production cold start (2026-09-27)
+- Published VM starts slowly (~34s server boot; first Chromium launch can be far slower than dev's 0.3–7s). A real "no sandbox" failure aborts in ~0.1s with a FATAL setuid_sandbox_host line; a ~30s failure means launch timeout, not sandbox.
+- **How to apply:** diagnose from the "Chromium launch failed (kind=...)" log line in deployment logs before touching sandbox settings. No-userns can be simulated in dev: `unshare -Ur sh -c 'echo 1 > /proc/sys/user/max_user_namespaces; exec unshare -U --map-user=1000 --map-group=1000 <cmd>'`.

@@ -44,6 +44,7 @@ Code in `browser_mcp/` (headless Nix Chromium via Playwright). Params: `url` (pu
 
 - Every request (navigation, redirects, subresources, websockets) goes through a local CONNECT-only guard proxy that resolves DNS itself and only connects to public IPs on port 443. Chromium's own DNS is disabled.
 - One capture at a time, 60s total cap, fresh browser per capture, always closed.
+- Chromium launch timeout 45s (`BROWSER_LAUNCH_TIMEOUT_MS`); launch failures are logged and classified (timeout / sandbox / other).
 - Pages taller than 8000px are downscaled (not cropped) up to 20000px; taller → labelled viewport fallback.
 
 Activation (env vars):

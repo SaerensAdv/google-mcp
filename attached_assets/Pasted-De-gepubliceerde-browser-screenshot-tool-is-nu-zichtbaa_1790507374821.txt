@@ -1,0 +1,35 @@
+De gepubliceerde browser_screenshot-tool is nu zichtbaar in ClickUp, maar de eerste echte aanroep faalt:
+
+“Chromium-sandbox is niet beschikbaar op deze server; capture geweigerd.”
+
+Testaanroep:
+url=https://abonnement.website
+device=desktop
+full_page=true
+
+Onderzoek uitsluitend deze blokkade. Geen extra features en geen wijzigingen aan Ads, GA4, GSC, PSI of de bestaande authenticatiekeuze.
+
+AANPAK
+1. Controleer hoe capture.py sandboxbeschikbaarheid bepaalt. Maak onderscheid tussen een fout in die controle en een echte beperking van de gepubliceerde Replit-runtime.
+2. Onderzoek de concrete Chromium-startfout, uitvoeringsgebruiker, browserbinary, launch-argumenten en relevante sandbox-/containerrechten. Toon geen secrets.
+3. Vergelijk development met de gepubliceerde omgeving. Als je productie niet kunt inspecteren, zeg dat expliciet en geef de kleinst mogelijke diagnostische stap. Development-succes is geen productiebewijs.
+4. Als een beperkte configuratie- of codefix mogelijk is met behoud van de Chromium-sandbox, voer die alleen in development door en test ze.
+
+GRENZEN
+- Zet BROWSER_ALLOW_NO_SANDBOX niet aan.
+- Gebruik geen --no-sandbox of andere omzeiling van browserisolatie.
+- Behoud URL-/netwerkbeveiliging, geïsoleerde sessies, timeouts, concurrencylimiet en gegarandeerde procesopruiming.
+- Geen privileged container, verruimde hostrechten, hostingupgrade, nieuwe dienst of publicatie zonder afzonderlijk akkoord.
+- Als sandboxing binnen dit deploymenttype niet mogelijk blijkt, stop. Leg de beperking uit en geef de kleinste veilige vervolgstap, zonder die te bouwen.
+
+VALIDATIE BIJ EEN FIX
+- Echte screenshot via een MCP-aanroep, met decodeerbare afbeeldingsdata.
+- Bewijs dat Chromium met sandbox draait.
+- Browserprocessen worden opgeruimd na succes, fout en afgebroken aanvraag.
+- Bestaande tools blijven werken.
+- Vermeld per test in welke omgeving deze is uitgevoerd.
+
+OPLEVERING
+Geef kort: oorzaak met bewijs, eventuele gewijzigde bestanden, testresultaten en wat nog nodig is voor de live test vanuit ClickUp.
+
+Niet publiceren. Geen bredere refactor.
