@@ -12,6 +12,8 @@ expertMode = true
 [userenv.shared]
 GOOGLE_ADS_MCP_BASE_URL = "https://sa-google-ads-mcp.replit.app"
 PORT = "8080"
+BROWSER_TOOL_ALLOW_UNAUTHENTICATED = "true"
+BROWSER_TOOL_ENABLED = "true"
 
 [workflows]
 runButton = "Project"
