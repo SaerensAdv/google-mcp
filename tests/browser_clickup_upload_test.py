@@ -260,6 +260,56 @@ class UploadTest(unittest.TestCase):
         self.assertEqual(os.stat(self.registry.path).st_mode & 0o777, 0o600)
 
 
+class MultiListAllowlistTest(UploadTest):
+    """Two allowed Home Lists (e.g. Opportunities + Lead Pipeline) via the same env var."""
+
+    def setUp(self):
+        super().setUp()
+        self.env2 = mock.patch.dict(os.environ, {"CLICKUP_UPLOAD_ALLOWED_LIST_IDS": "900100, 900200"})
+        self.env2.start()
+        self.fake.tasks.update({
+            "86lead": {"id": "86lead", "url": "https://app.clickup.com/t/86lead",
+                       "list": {"id": "900200"}, "locations": [], "attachments": []},
+            # Home List not allowed; allowed list only as an additional location.
+            "86extra": {"id": "86extra", "url": "https://app.clickup.com/t/86extra",
+                        "list": {"id": "555"}, "locations": [{"id": "900200"}, {"id": "900100"}],
+                        "attachments": []},
+        })
+
+    def tearDown(self):
+        self.env2.stop()
+        super().tearDown()
+
+    def test_second_home_list_allowed(self):
+        r = self.run_upload(task_id="86lead")
+        self.assertTrue(r["upload_ok"] and r["upload_verified"])
+        self.assertEqual(r["list_id"], "900200")
+
+    def test_first_home_list_still_allowed(self):
+        r = self.run_upload(task_id="86ok")
+        self.assertTrue(r["upload_ok"] and r["upload_verified"])
+        self.assertEqual(r["list_id"], "900100")
+
+    def test_other_home_list_refused(self):
+        self.assert_refused_early(lambda: self.run_upload(task_id="86other"))
+
+    def test_allowed_list_only_as_extra_location_refused(self):
+        self.assert_refused_early(lambda: self.run_upload(task_id="86extra"))
+
+    def test_missing_or_wrong_key_refused(self):
+        self.assert_refused_early(lambda: self.run_upload(task_id="86lead", headers={}))
+        self.assert_refused_early(lambda: self.run_upload(
+            task_id="86lead", headers={cu.HEADER_NAME: "Bearer " + KEY}))
+        self.assertEqual(self.fake.calls, [])
+
+    def test_repeat_on_second_list_no_duplicate(self):
+        first = self.run_upload(task_id="86lead")
+        second = self.run_upload(task_id="86lead")
+        self.assertEqual(self.fake.uploads, 1)
+        self.assertTrue(second["deduplicated"])
+        self.assertEqual(second["attachment_id"], first["attachment_id"])
+
+
 class GateTest(unittest.TestCase):
     def test_disabled_without_full_config(self):
         for drop in ENV:
