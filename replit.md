@@ -63,9 +63,9 @@ Activation (env vars):
 - `BROWSER_TOOL_ENABLED=true` **and** either `MCP_INBOUND_AUTH=api_key` (recommended) or `BROWSER_TOOL_ALLOW_UNAUTHENTICATED=true`.
 - Rollback: remove `BROWSER_TOOL_ENABLED` (tool is not registered at all).
 
-## Inbound authentication — OFF by default
+## Inbound authentication — ON (`MCP_INBOUND_AUTH=api_key`, shared env)
 
-`ads_mcp/inbound_auth.py`. When `MCP_INBOUND_AUTH=api_key`, clients must send `Authorization: Bearer <MCP_API_KEY>` or `X-API-Key: <MCP_API_KEY>`. Unset = current open behaviour (was removed earlier for ClickUp compatibility).
+`ads_mcp/inbound_auth.py`. Clients must send `Authorization: Bearer <MCP_API_KEY>` or `X-API-Key: <MCP_API_KEY>` on every request (also `/browser-screenshots/*`). The ClickUp connection sends both this header and `X-Screenshot-Upload-Key`. Rollback: remove `MCP_INBOUND_AUTH` and republish (server is then open to anyone with the URL).
 
 ## Tool configuration
 
