@@ -115,6 +115,11 @@ class TranslateErrorTests(unittest.TestCase):
         e = google_rest.translate_error("Tag Manager API", 403, {"error": {"message": "Request had insufficient authentication scopes."}})
         self.assertEqual(e.reason, "SCOPE")
 
+    def test_merchant_not_registered(self):
+        e = google_rest.translate_error("Merchant API", 401, {"error": {"message": "GCP project with id x and number 1 is not registered with the merchant account. Please follow these steps"}})
+        self.assertEqual(e.reason, "NOT_REGISTERED")
+        self.assertIn("developer registration", str(e))
+
     def test_permission_and_rate(self):
         self.assertIn("access denied", str(google_rest.translate_error("X", 403, {"error": {"message": "nope"}})))
         self.assertEqual(google_rest.translate_error("X", 429, {}).reason, "RATE_LIMIT")

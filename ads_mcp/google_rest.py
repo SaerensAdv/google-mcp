@@ -58,6 +58,14 @@ def translate_error(api_label: str, status: int, payload: Any) -> GoogleApiError
             "Log in again with all scopes (see replit.md, 'Google login') and update GOOGLE_REFRESH_TOKEN.",
             status, "SCOPE",
         )
+    if "is not registered with the merchant account" in message:
+        return GoogleApiError(
+            "The Merchant API needs a one-time developer registration of the Google Cloud project "
+            "with a Merchant Center account (admin rights needed). After registering, wait ~5 minutes. "
+            "Guide: https://developers.google.com/merchant/api/guides/quickstart/direct-api-calls"
+            "#step_1_register_as_a_developer",
+            status, "NOT_REGISTERED",
+        )
     if status == 404:
         return GoogleApiError(f"{api_label}: not found. {message}", status, "NOT_FOUND")
     if status == 429:

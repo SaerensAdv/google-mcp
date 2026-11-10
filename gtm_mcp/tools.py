@@ -32,6 +32,7 @@ TAG_TYPES = {
     "googtag": ("Google Tag", None),  # platform from tagId (G- / AW-)
     "gaawc": ("GA4 Configuration (legacy)", "ga4"),
     "gaawe": ("GA4 Event", "ga4"),
+    "dest_ga": ("Google Tag (GA4 destination)", "ga4"),
     "ua": ("Universal Analytics (discontinued)", "universal_analytics"),
     "flc": ("Floodlight Counter", "floodlight"),
     "fls": ("Floodlight Sales", "floodlight"),
@@ -51,6 +52,7 @@ PLATFORM_HINTS = [
     ("pinterest", ("pintrk", "pinterest")),
     ("snapchat", ("snaptr", "snapchat")),
     ("hotjar", ("static.hotjar.com", "hotjar")),
+    ("microsoft_clarity", ("clarity.ms", "microsoft clarity")),
     ("google_ads", ("googleadservices.com", "gtag('config', 'aw-", "gtag(\"config\", \"aw-", "google ads")),
     ("ga4", ("gtag('config', 'g-", "gtag(\"config\", \"g-", "google analytics 4", "ga4")),
 ]
@@ -185,11 +187,16 @@ def live_container_summary(account_id: str = "", container_id: str = "", include
     template_names = {}
     for t in version.get("customTemplate", []) or []:
         template_names[f"cvt_{t.get('containerId')}_{t.get('templateId')}"] = t.get("name", "")
+        gallery_id = (t.get("galleryReference") or {}).get("galleryTemplateId")
+        if gallery_id:
+            template_names[f"cvt_{gallery_id}"] = t.get("name", "")
 
     triggers = version.get("trigger", []) or []
     trigger_names = {t.get("triggerId"): t.get("name") for t in triggers}
-    # Built-in "All Pages" trigger is not listed in the version.
+    # Built-in triggers are not listed in the version.
     trigger_names.setdefault("2147479553", "All Pages")
+    trigger_names.setdefault("2147479572", "Consent Initialization - All Pages")
+    trigger_names.setdefault("2147479573", "Initialization - All Pages")
 
     tags_out = []
     by_platform: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
