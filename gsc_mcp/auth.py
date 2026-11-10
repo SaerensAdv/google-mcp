@@ -1,19 +1,14 @@
 """Google Search Console authentication via refresh token.
 
-Expects these environment variables in Replit Secrets:
-- GSC_CLIENT_ID
-- GSC_CLIENT_SECRET
-- GSC_REFRESH_TOKEN
-
-Optionally reuses the same OAuth app as Google Ads if scopes allow it.
+Uses the shared Google login (ads_mcp/user_credentials.py):
+GSC_CLIENT_ID / GSC_CLIENT_SECRET + GOOGLE_REFRESH_TOKEN, falling back to GSC_REFRESH_TOKEN.
 """
 
-import os
 import logging
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+
+from ads_mcp.user_credentials import get_user_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -28,26 +23,7 @@ def get_gsc_service():
     if _service_cache is not None:
         return _service_cache
 
-    client_id = os.environ.get("GSC_CLIENT_ID")
-    client_secret = os.environ.get("GSC_CLIENT_SECRET")
-    refresh_token = os.environ.get("GSC_REFRESH_TOKEN")
-
-    if not all([client_id, client_secret, refresh_token]):
-        raise EnvironmentError(
-            "Missing GSC credentials. Set GSC_CLIENT_ID, GSC_CLIENT_SECRET, "
-            "and GSC_REFRESH_TOKEN in Replit Secrets."
-        )
-
-    creds = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=SCOPES,
-    )
-
-    creds.refresh(Request())
+    creds = get_user_credentials(SCOPES)
     _service_cache = build(
         "searchconsole", "v1", credentials=creds, cache_discovery=False
     )

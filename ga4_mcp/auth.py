@@ -1,19 +1,15 @@
 """Google Analytics 4 authentication via refresh token.
 
-Reuses GSC credentials by default (same OAuth app, same token).
-Falls back to GA4-specific env vars if set.
-
-Looks for: GA4_CLIENT_ID / GA4_CLIENT_SECRET / GA4_REFRESH_TOKEN
-Fallback:  GSC_CLIENT_ID / GSC_CLIENT_SECRET / GSC_REFRESH_TOKEN
+Uses the shared Google login (ads_mcp/user_credentials.py): GSC OAuth client,
+refresh token GA4_REFRESH_TOKEN (if set) -> GOOGLE_REFRESH_TOKEN -> GSC_REFRESH_TOKEN.
 """
 
-import os
 import logging
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
+
+from ads_mcp.user_credentials import get_user_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -24,28 +20,12 @@ _admin_client_cache = None
 
 
 def _get_credentials():
-    """Build and refresh OAuth2 credentials from env vars."""
-    client_id = os.environ.get("GA4_CLIENT_ID") or os.environ.get("GSC_CLIENT_ID")
-    client_secret = os.environ.get("GA4_CLIENT_SECRET") or os.environ.get("GSC_CLIENT_SECRET")
-    refresh_token = os.environ.get("GA4_REFRESH_TOKEN") or os.environ.get("GSC_REFRESH_TOKEN")
+    """Shared Google login; a GA4-specific token (GA4_REFRESH_TOKEN) is tried first if set.
 
-    if not all([client_id, client_secret, refresh_token]):
-        raise EnvironmentError(
-            "Missing GA4/GSC credentials. Set GA4_CLIENT_ID, GA4_CLIENT_SECRET, "
-            "GA4_REFRESH_TOKEN (or their GSC_ equivalents) in Replit Secrets."
-        )
-
-    creds = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=SCOPES,
-    )
-
-    creds.refresh(Request())
-    return creds
+    Note: GA4_CLIENT_ID / GA4_CLIENT_SECRET are no longer used; the shared
+    GSC OAuth client is always used.
+    """
+    return get_user_credentials(SCOPES, extra_token_env=("GA4_REFRESH_TOKEN",))
 
 
 def get_ga4_data_client():

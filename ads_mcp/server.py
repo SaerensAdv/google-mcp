@@ -8,6 +8,9 @@ Tools:
   GA4: ga4_list_properties, ga4_run_report, ga4_traffic_overview,
        ga4_traffic_sources, ga4_top_pages, ga4_conversions, ga4_landing_pages
   PSI: psi_analyze
+  Merchant Center: merchant_list_accounts, merchant_account_issues,
+       merchant_product_status_summary, merchant_list_products (read-only)
+  Tag Manager: gtm_list_accounts, gtm_list_containers, gtm_live_container_summary (read-only)
 """
 
 from fastmcp import FastMCP
@@ -233,6 +236,34 @@ except ImportError as e:
     logger.warning(f"PSI tools not loaded (missing dependencies): {e}")
 except Exception as e:
     logger.warning(f"PSI tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Merchant Center tools (merchant_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from merchant_mcp.tools import register as register_merchant_tools
+    register_merchant_tools(mcp)
+    logger.info("Merchant Center tools registered successfully")
+except ImportError as e:
+    logger.warning(f"Merchant Center tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Merchant Center tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Tag Manager tools (gtm_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from gtm_mcp.tools import register as register_gtm_tools
+    register_gtm_tools(mcp)
+    logger.info("Tag Manager tools registered successfully")
+except ImportError as e:
+    logger.warning(f"Tag Manager tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Tag Manager tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------
