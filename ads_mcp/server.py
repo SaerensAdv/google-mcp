@@ -12,6 +12,8 @@ Tools:
        merchant_product_status_summary, merchant_list_products (read-only)
   Tag Manager: gtm_list_accounts, gtm_list_containers, gtm_live_container_summary (read-only)
   Places: places_search, places_details (local competitors; daily cap PLACES_DAILY_CAP)
+  Business Profile: gbp_list_accounts, gbp_list_locations, gbp_location_details,
+       gbp_performance, gbp_search_keywords, gbp_list_reviews (read-only)
 """
 
 from fastmcp import FastMCP
@@ -279,6 +281,20 @@ except ImportError as e:
     logger.warning(f"Tag Manager tools not loaded (missing dependencies): {e}")
 except Exception as e:
     logger.warning(f"Tag Manager tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Google Business Profile tools (gbp_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from gbp_mcp.tools import register as register_gbp_tools
+    register_gbp_tools(mcp)
+    logger.info("Business Profile tools registered successfully")
+except ImportError as e:
+    logger.warning(f"Business Profile tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Business Profile tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------

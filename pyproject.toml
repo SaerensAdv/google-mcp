@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*", "psi_mcp*", "browser_mcp*", "merchant_mcp*", "gtm_mcp*", "places_mcp*"]
+include = ["ads_mcp*", "gsc_mcp*", "ga4_mcp*", "psi_mcp*", "browser_mcp*", "merchant_mcp*", "gtm_mcp*", "places_mcp*", "gbp_mcp*"]
 
 [tool.uv]
 package = true

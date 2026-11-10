@@ -42,17 +42,18 @@ https://<replit-dev-domain>/mcp
 - `merchant_*` — Google Merchant Center via Merchant API v1 (`merchant_mcp/`), read-only (GET only): `merchant_list_accounts` (+ sub-accounts), `merchant_account_issues`, `merchant_product_status_summary` (disapproval reasons with product counts per destination/country), `merchant_list_products` (status filter `all`/`disapproved`/`issues`, scans max 5000 products).
 - `gtm_*` — Google Tag Manager API v2 (`gtm_mcp/`), read-only: `gtm_list_accounts`, `gtm_list_containers`, `gtm_live_container_summary` (live version: tags/triggers/variables, conversion overview per platform, attention points; accepts `GTM-XXXX`).
 - `places_search` / `places_details` — Google Places API (New) (`places_mcp/`), local competitor research with the existing `GOOGLE_API_KEY` (sent as header, never logged). Search: max 20 results, optional `near` (place name = 1 extra call, or `lat,lng`) + `radius_km` (≤50, `strict_radius` filters by distance). Details: up to 5 reviews (Google's selection). Field masks keep cost low, but rating/website/reviews are Google's Enterprise-tier fields. Daily cap `PLACES_DAILY_CAP` (default 200, 0 = off; Brussels day; counter in `~/.cache/places-usage/usage.json`, override `PLACES_USAGE_FILE`).
+- `gbp_*` — Google Business Profile (`gbp_mcp/`), read-only (GET only, although the `business.manage` login technically allows edits): `gbp_list_accounts`, `gbp_list_locations`, `gbp_location_details`, `gbp_performance` (views Search/Maps, calls, website clicks, routes; default last 28 days to yesterday), `gbp_search_keywords` (monthly, default last 3 complete months), `gbp_list_reviews` (needs account_id; rating summary, max 200). Needs the 4 GBP APIs enabled in GCP project 294994430690 (Account Management, Business Information, Business Profile Performance, Google My Business) **and** Google's approval of the GBP API access request (otherwise quota 0). Both cases return one clear message instead of the raw Google error.
 - GSC, GA4, PSI tools are in `gsc_mcp/`, `ga4_mcp/`, `psi_mcp/`. All modules register with try/except: a failing module never stops the server.
 
-## Google login (GSC, GA4, Merchant Center, Tag Manager)
+## Google login (GSC, GA4, Merchant Center, Tag Manager, Business Profile)
 
 Shared helper `ads_mcp/user_credentials.py` (REST helper for Merchant/GTM: `ads_mcp/google_rest.py`).
 - OAuth client: `GSC_CLIENT_ID` / `GSC_CLIENT_SECRET` (Web client in GCP project 294994430690; only registered redirect URI is the OAuth Playground).
 - Refresh tokens tried in order: (`GA4_REFRESH_TOKEN` for GA4 only) → `GOOGLE_REFRESH_TOKEN` (new login) → `GSC_REFRESH_TOKEN` (original login, fallback). Each service asks only its own scope; a token lacking that scope is skipped.
 - Re-login: https://developers.google.com/oauthplayground → gear → "Use your own OAuth credentials" (GSC client) → scopes `webmasters.readonly`, `sitemaps`, `analytics.readonly`, `business.manage`, `content`, `tagmanager.readonly` (all `https://www.googleapis.com/auth/...`) → exchange code → store refresh token as `GOOGLE_REFRESH_TOKEN`.
-- APIs to enable in the GCP project: Search Console, Analytics Data/Admin, Merchant API, Tag Manager API.
+- APIs to enable in the GCP project: Search Console, Analytics Data/Admin, Merchant API, Tag Manager API, and for Business Profile the 4 GBP APIs above.
 - Merchant API: the GCP project is registered once (developer registration via Merchant account 5733856690, done 2026-11-10); this covers all Merchant accounts the login can access.
-- New Google tool modules (e.g. Business Profile) should use this helper instead of their own token handling.
+- New Google tool modules should use this helper instead of their own token handling.
 
 ## Browser screenshot tool (`browser_screenshot`) — OFF by default
 
