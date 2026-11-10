@@ -37,6 +37,7 @@ https://<replit-dev-domain>/mcp
 - `search` — Query Google Ads account data via GAQL
 - `get_resource_metadata` — Get metadata for a Google Ads resource type
 - `list_accessible_customers` — List customer IDs accessible to the authenticated user
+- `keyword_ideas` / `keyword_historical_metrics` — Google Ads Keyword Planner (`ads_mcp/keyword_planner.py`), read-only (only the "generate" calls, nothing is saved in the account). Defaults: Dutch (`1010`) + Belgium (`2056`), Google Search network. Language/locations accept IDs or names ("nl", "Nederlands", "Gent", "België"). Bids returned in account currency; ideas sorted by volume, max 200; historical max 100 keywords with 12-month trend. Keyword Planner has strict rate limits (rate-limit errors get a "wait a minute" hint).
 
 ## Browser screenshot tool (`browser_screenshot`) — OFF by default
 

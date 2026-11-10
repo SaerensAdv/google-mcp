@@ -1,7 +1,8 @@
 """Unified MCP server for Google Ads + Google Search Console + Google Analytics 4 + PageSpeed Insights.
 
 Tools:
-  Google Ads: ping, list_customers, search, get_resource_metadata
+  Google Ads: ping, list_customers, search, get_resource_metadata,
+              keyword_ideas, keyword_historical_metrics (Keyword Planner, read-only)
   GSC: gsc_list_properties, gsc_search_analytics, gsc_advanced_search_analytics,
        gsc_performance_overview, gsc_compare_periods, gsc_search_by_page, gsc_inspect_url
   GA4: ga4_list_properties, ga4_run_report, ga4_traffic_overview,
@@ -176,6 +177,20 @@ def get_resource_metadata(resource_name: str) -> Dict[str, Any]:
         "filterable": sorted(list(filterable)),
         "sortable": sorted(list(sortable)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Google Ads Keyword Planner tools (ads_mcp/keyword_planner.py)
+# ---------------------------------------------------------------------------
+
+try:
+    from ads_mcp.keyword_planner import register as register_keyword_planner_tools
+    register_keyword_planner_tools(mcp)
+    logger.info("Keyword Planner tools registered successfully")
+except ImportError as e:
+    logger.warning(f"Keyword Planner tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Keyword Planner tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------
