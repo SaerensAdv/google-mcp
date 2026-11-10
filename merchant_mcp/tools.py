@@ -157,7 +157,8 @@ def product_status_summary(account_id: str, country: str = "", reporting_context
         ]
         issues.sort(key=lambda r: (sev_order.get(r["severity"], 9), -r["products"]))
         groups.append({
-            "reporting_context": s.get("reportingContext"),
+            # Google also returns groups without a reporting context (newer/unnamed destinations).
+            "reporting_context": s.get("reportingContext") or "UNSPECIFIED",
             "country": s.get("country"),
             "active": int(stats.get("activeCount", 0) or 0),
             "pending": int(stats.get("pendingCount", 0) or 0),
@@ -166,15 +167,21 @@ def product_status_summary(account_id: str, country: str = "", reporting_context
             "issues": issues[:25],
             "more_issues": max(0, len(issues) - 25),
         })
-    groups.sort(key=lambda g: (-g["disapproved"], g["reporting_context"] or "", g["country"] or ""))
+    groups.sort(key=lambda g: (g["reporting_context"] == "UNSPECIFIED", -g["disapproved"],
+                               g["reporting_context"], g["country"] or ""))
+    by_destination: Dict[str, int] = {}
+    for g in groups:
+        if g["reporting_context"] != "UNSPECIFIED":
+            key = f'{g["reporting_context"]} {g["country"] or ""}'.strip()
+            by_destination[key] = max(by_destination.get(key, 0), g["disapproved"])
     return {
         "account_id": aid,
         "filters": {"country": country or None, "reporting_context": reporting_context or None},
         "groups": groups,
-        "totals": {
-            "disapproved": sum(g["disapproved"] for g in groups),
-            "note": "Counts are per reporting context + country; one product can appear in several groups.",
-        },
+        "disapproved_by_destination": by_destination,
+        "note": "Counts are per destination (reporting context) + country; one product can be "
+                "disapproved in several destinations, so do not add them up. "
+                "UNSPECIFIED = groups Google returns without a destination name.",
     }
 
 
@@ -253,10 +260,12 @@ def list_products(account_id: str, status: str = "all", limit: int = 50, page_to
         if scanned >= PRODUCT_SCAN_CAP:
             truncated = True
             break
-    reasons = Counter(
-        i["description"] for r in matched for i in r["issues"]
-        if status != "disapproved" or i["severity"] == "DISAPPROVED"
-    )
+    reasons = Counter()
+    for r in matched:  # count each product once per reason
+        reasons.update({
+            i["description"] for i in r["issues"]
+            if status != "disapproved" or i["severity"] == "DISAPPROVED"
+        })
     return {
         "account_id": aid,
         "status_filter": status,

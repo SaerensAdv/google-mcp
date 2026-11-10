@@ -50,6 +50,7 @@ Shared helper `ads_mcp/user_credentials.py` (REST helper for Merchant/GTM: `ads_
 - Refresh tokens tried in order: (`GA4_REFRESH_TOKEN` for GA4 only) → `GOOGLE_REFRESH_TOKEN` (new login) → `GSC_REFRESH_TOKEN` (original login, fallback). Each service asks only its own scope; a token lacking that scope is skipped.
 - Re-login: https://developers.google.com/oauthplayground → gear → "Use your own OAuth credentials" (GSC client) → scopes `webmasters.readonly`, `sitemaps`, `analytics.readonly`, `business.manage`, `content`, `tagmanager.readonly` (all `https://www.googleapis.com/auth/...`) → exchange code → store refresh token as `GOOGLE_REFRESH_TOKEN`.
 - APIs to enable in the GCP project: Search Console, Analytics Data/Admin, Merchant API, Tag Manager API.
+- Merchant API: the GCP project is registered once (developer registration via Merchant account 5733856690, done 2026-11-10); this covers all Merchant accounts the login can access.
 - New Google tool modules (e.g. Business Profile) should use this helper instead of their own token handling.
 
 ## Browser screenshot tool (`browser_screenshot`) — OFF by default

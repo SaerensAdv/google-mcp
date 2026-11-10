@@ -185,6 +185,7 @@ class MerchantTests(unittest.TestCase):
     def test_status_summary(self):
         fake = FakeRoutes({"aggregateProductStatuses": {"aggregateProductStatuses": [
             {"reportingContext": "FREE_LISTINGS", "country": "BE", "stats": {"activeCount": "10"}},
+            {"country": "BE", "stats": {"disapprovedCount": "99"}},
             {"reportingContext": "SHOPPING_ADS", "country": "BE",
              "stats": {"activeCount": "80", "disapprovedCount": "20"},
              "itemLevelIssues": [
@@ -194,9 +195,10 @@ class MerchantTests(unittest.TestCase):
         with mock.patch.object(google_rest, "get_json", fake):
             out = merchant.product_status_summary("1", country="be", reporting_context="shopping_ads")
         g = out["groups"][0]
+        self.assertEqual(out["groups"][-1]["reporting_context"], "UNSPECIFIED")
         self.assertEqual((g["reporting_context"], g["disapproved"], g["active"]), ("SHOPPING_ADS", 20, 80))
         self.assertEqual(g["issues"][0]["description"], "Price mismatch")
-        self.assertEqual(out["totals"]["disapproved"], 20)
+        self.assertEqual(out["disapproved_by_destination"], {"SHOPPING_ADS BE": 20, "FREE_LISTINGS BE": 0})
         self.assertEqual(fake.calls[0][1]["filter"], 'country = "BE" AND reporting_context = "SHOPPING_ADS"')
 
     def test_list_products_all_paged(self):
@@ -211,9 +213,10 @@ class MerchantTests(unittest.TestCase):
 
     def test_list_products_disapproved_scans_pages(self):
         issue = {"severity": "DISAPPROVED", "description": "Image too small", "attribute": "image_link"}
+        issue2 = dict(issue, reportingContext="FREE_LISTINGS")
         demote = {"severity": "DEMOTED", "description": "Missing GTIN"}
         pages = [
-            {"products": [_product("a"), _product("b", "BE", [issue, demote])], "nextPageToken": "p2"},
+            {"products": [_product("a"), _product("b", "BE", [issue, issue2, demote])], "nextPageToken": "p2"},
             {"products": [_product("c", "BE", [issue]), _product("d", None, [demote])]},
         ]
         with mock.patch.object(google_rest, "get_json", FakeRoutes({"/products": pages})):
