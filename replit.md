@@ -41,6 +41,7 @@ https://<replit-dev-domain>/mcp
 
 - `merchant_*` — Google Merchant Center via Merchant API v1 (`merchant_mcp/`), read-only (GET only): `merchant_list_accounts` (+ sub-accounts), `merchant_account_issues`, `merchant_product_status_summary` (disapproval reasons with product counts per destination/country), `merchant_list_products` (status filter `all`/`disapproved`/`issues`, scans max 5000 products).
 - `gtm_*` — Google Tag Manager API v2 (`gtm_mcp/`), read-only: `gtm_list_accounts`, `gtm_list_containers`, `gtm_live_container_summary` (live version: tags/triggers/variables, conversion overview per platform, attention points; accepts `GTM-XXXX`).
+- `places_search` / `places_details` — Google Places API (New) (`places_mcp/`), local competitor research with the existing `GOOGLE_API_KEY` (sent as header, never logged). Search: max 20 results, optional `near` (place name = 1 extra call, or `lat,lng`) + `radius_km` (≤50, `strict_radius` filters by distance). Details: up to 5 reviews (Google's selection). Field masks keep cost low, but rating/website/reviews are Google's Enterprise-tier fields. Daily cap `PLACES_DAILY_CAP` (default 200, 0 = off; Brussels day; counter in `~/.cache/places-usage/usage.json`, override `PLACES_USAGE_FILE`).
 - GSC, GA4, PSI tools are in `gsc_mcp/`, `ga4_mcp/`, `psi_mcp/`. All modules register with try/except: a failing module never stops the server.
 
 ## Google login (GSC, GA4, Merchant Center, Tag Manager)

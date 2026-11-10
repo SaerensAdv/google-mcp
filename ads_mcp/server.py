@@ -11,6 +11,7 @@ Tools:
   Merchant Center: merchant_list_accounts, merchant_account_issues,
        merchant_product_status_summary, merchant_list_products (read-only)
   Tag Manager: gtm_list_accounts, gtm_list_containers, gtm_live_container_summary (read-only)
+  Places: places_search, places_details (local competitors; daily cap PLACES_DAILY_CAP)
 """
 
 from fastmcp import FastMCP
@@ -236,6 +237,20 @@ except ImportError as e:
     logger.warning(f"PSI tools not loaded (missing dependencies): {e}")
 except Exception as e:
     logger.warning(f"PSI tools failed to register: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Google Places tools (places_mcp module)
+# ---------------------------------------------------------------------------
+
+try:
+    from places_mcp.tools import register as register_places_tools
+    register_places_tools(mcp)
+    logger.info("Places tools registered successfully")
+except ImportError as e:
+    logger.warning(f"Places tools not loaded (missing dependencies): {e}")
+except Exception as e:
+    logger.warning(f"Places tools failed to register: {e}")
 
 
 # ---------------------------------------------------------------------------
