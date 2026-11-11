@@ -55,7 +55,7 @@ Shared helper `ads_mcp/user_credentials.py` (REST helper for Merchant/GTM: `ads_
 - Merchant API: the GCP project is registered once (developer registration via Merchant account 5733856690, done 2026-11-10); this covers all Merchant accounts the login can access.
 - New Google tool modules should use this helper instead of their own token handling.
 
-## Browser screenshot tool (`browser_screenshot`) — OFF by default
+## Browser tools (`browser_screenshot`, site checks) — OFF by default
 
 Code in `browser_mcp/` (headless Nix Chromium via Playwright). Params: `url` (public https), `device` (`desktop` 1440×900 / `mobile` 390×844 emulation), `full_page` (default true). Returns MCP image content (JPEG) + JSON metadata.
 
@@ -63,6 +63,13 @@ Code in `browser_mcp/` (headless Nix Chromium via Playwright). Params: `url` (pu
 - One capture at a time, 60s total cap, fresh browser per capture, always closed.
 - Chromium launch timeout 45s (`BROWSER_LAUNCH_TIMEOUT_MS`); launch failures are logged and classified (timeout / sandbox / other).
 - Pages taller than 8000px are downscaled (not cropped) up to 20000px; taller → labelled viewport fallback.
+
+Site checks (registered together with `browser_screenshot`, same gate/lock/guard proxy; `browser_mcp/sitecheck.py`, pure logic in `tracking.py` + `consent.py`):
+- `browser_tracking_check(url, consent=compare|accept|reject|none, click, device)`: tags/pixels per phase (before consent, after reject, after accept, after an optional click), Consent Mode gcs/gcd decoding (incl. v2 signals), tracking cookies (names only), dataLayer consent commands/events, CMP detection + accept/reject button click (known CMP selectors, then NL/FR/EN/DE button text), findings in Dutch.
+- `browser_page_audit(url, device)`: JS/console errors, failed requests, DevTools Issues (CDP `Audits`, incl. contrast check), lab timings (TTFB/FCP/LCP/CLS/TBT, unthrottled), page weight + third parties, SEO basics.
+- Read-only towards the site: recognised tracking beacons and every non-GET request are answered locally with 204 (+CORS) and never sent, so no test traffic in client GA4/Ads/Meta and no form posts. Form submit buttons are refused as click target.
+- Geo caveat: the server's outgoing IP is in the US (dev: Google Cloud South Carolina). CMPs with region rules (e.g. Cookiebot) then skip the banner/GDPR; the report shows `visitor_country`, `cmp_geo` and a `geo_warning`.
+- Bot protection (Cloudflare challenge, 403) makes results unusable; flagged as a finding.
 
 Temporary download link (compatibility test for ClickUp, `browser_mcp/linkstore.py`):
 - Adds `screenshot_url` + `expires_at` to the metadata, next to the unchanged MCP image content. Route `GET /browser-screenshots/<192-bit token>`, max 10 min, cap 20 images / 50 MB, private temp dir, tokens redacted from access logs.

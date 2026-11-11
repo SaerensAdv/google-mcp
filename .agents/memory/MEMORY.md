@@ -1,4 +1,4 @@
-- [Browser screenshot tool](browser-tool.md) — inbound API-key auth turned ON with user approval (2026-10-22); Nix Chromium + pip Playwright; slow scroll for reveal animations.
+- [Browser tools](browser-tool.md) — auth ON with user approval (2026-10-22); Nix Chromium + Playwright; site checks: US egress breaks EU consent checks, beacons answered locally.
 - [New package needs uv sync](editable-install-new-package.md) — new top-level tool package: add to pyproject include + `uv sync`, else server silently skips it.
 - [GBP API access status](gbp-access.md) — as of 2026-11-10 GBP APIs off + access not approved for GCP project 294994430690; live check of gbp_ tools still pending.
 - [uv deployment venv fix](uv-deploy-venv.md) — `.pythonlibs` must be a uv venv built on the real nix Python (not the wrapper) or `uv sync`/publish fails with nix-store permission errors.

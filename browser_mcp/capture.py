@@ -174,13 +174,15 @@ def _safe_url_for_log(url: str) -> str:
 
 
 @contextlib.asynccontextmanager
-async def hardened_page(device: str) -> AsyncIterator[tuple]:
-    """Yields (page, proxy, browser_version, sandboxed) with guaranteed cleanup."""
+async def hardened_browser() -> AsyncIterator[tuple]:
+    """Yields (browser, proxy, browser_version, sandboxed) with guaranteed cleanup.
+
+    Use ``new_hardened_context`` for each (fresh, isolated) browsing session.
+    """
     from playwright.async_api import async_playwright
 
-    vp = VIEWPORTS[device]
     proxy = GuardProxy()
-    pw = browser = context = None
+    pw = browser = None
     sandboxed = True
     try:
         await proxy.start()
@@ -245,39 +247,11 @@ async def hardened_page(device: str) -> AsyncIterator[tuple]:
             "Chromium %s started in %.1fs (sandbox=%s)",
             browser.version, time.monotonic() - launch_started, sandboxed,
         )
-        major = browser.version.split(".")[0]
-        if vp["is_mobile"]:
-            ua = (
-                f"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
-                f"(KHTML, like Gecko) Chrome/{major}.0.0.0 Mobile Safari/537.36"
-            )
-        else:
-            ua = (
-                f"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                f"(KHTML, like Gecko) Chrome/{major}.0.0.0 Safari/537.36"
-            )
-        context = await browser.new_context(
-            viewport={"width": vp["width"], "height": vp["height"]},
-            device_scale_factor=1,
-            is_mobile=vp["is_mobile"],
-            has_touch=vp["is_mobile"],
-            user_agent=ua,
-            locale="nl-BE",
-            timezone_id="Europe/Brussels",
-            accept_downloads=False,
-            service_workers="block",
-            java_script_enabled=True,
-            permissions=[],
-        )
-        page = await context.new_page()
-        # No popups, no dialogs: any page other than the main one is closed immediately.
-        context.on("page", lambda p: asyncio.ensure_future(p.close()) if p is not page else None)
-        page.on("dialog", lambda d: asyncio.ensure_future(d.dismiss()))
-        yield page, proxy, browser.version, sandboxed
+        yield browser, proxy, browser.version, sandboxed
     finally:
         # Teardown runs in its own task and is shielded: a cancelled MCP request can
         # not interrupt it, and the caller (holding the capture lock) waits for it.
-        task = asyncio.ensure_future(_teardown(context, browser, pw, proxy))
+        task = asyncio.ensure_future(_teardown(None, browser, pw, proxy))
         cancelled = False
         while not task.done():
             try:
@@ -288,6 +262,57 @@ async def hardened_page(device: str) -> AsyncIterator[tuple]:
                 break
         if cancelled:
             raise asyncio.CancelledError
+
+
+async def new_hardened_context(browser, device: str):
+    """Fresh isolated context (no cookies/storage) + its single page. Caller closes the context."""
+    vp = VIEWPORTS[device]
+    major = browser.version.split(".")[0]
+    if vp["is_mobile"]:
+        ua = (
+            f"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+            f"(KHTML, like Gecko) Chrome/{major}.0.0.0 Mobile Safari/537.36"
+        )
+    else:
+        ua = (
+            f"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+            f"(KHTML, like Gecko) Chrome/{major}.0.0.0 Safari/537.36"
+        )
+    context = await browser.new_context(
+        viewport={"width": vp["width"], "height": vp["height"]},
+        device_scale_factor=1,
+        is_mobile=vp["is_mobile"],
+        has_touch=vp["is_mobile"],
+        user_agent=ua,
+        locale="nl-BE",
+        timezone_id="Europe/Brussels",
+        accept_downloads=False,
+        service_workers="block",
+        java_script_enabled=True,
+        permissions=[],
+    )
+    try:
+        page = await context.new_page()
+    except Exception:
+        with contextlib.suppress(Exception):
+            await asyncio.wait_for(context.close(), 10)
+        raise
+    # No popups, no dialogs: any page other than the main one is closed immediately.
+    context.on("page", lambda p: asyncio.ensure_future(p.close()) if p is not page else None)
+    page.on("dialog", lambda d: asyncio.ensure_future(d.dismiss()))
+    return context, page
+
+
+@contextlib.asynccontextmanager
+async def hardened_page(device: str) -> AsyncIterator[tuple]:
+    """Yields (page, proxy, browser_version, sandboxed) with guaranteed cleanup."""
+    async with hardened_browser() as (browser, proxy, version, sandboxed):
+        context, page = await new_hardened_context(browser, device)
+        try:
+            yield page, proxy, version, sandboxed
+        finally:
+            with contextlib.suppress(Exception):
+                await asyncio.wait_for(context.close(), 10)
 
 
 async def _teardown(context, browser, pw, proxy) -> None:
@@ -451,6 +476,29 @@ async def _do_capture(page, proxy, browser_version, url, device, full_page) -> C
             "browser": f"Chromium {browser_version}",
         },
     )
+
+
+async def check_public_url(url: str) -> str:
+    """Validates a user URL (public https only); raises CaptureError with a safe message."""
+    try:
+        url = validate_input_url(url)
+        await resolve_public(urlsplit(url).hostname or "")
+    except BlockedURLError as e:
+        raise CaptureError(f"URL geweigerd: {e}") from None
+    return url
+
+
+@contextlib.asynccontextmanager
+async def browser_slot(busy_message: str = "Er loopt al een browsertaak; probeer het zo opnieuw."):
+    """One browser job at a time (screenshots and site checks share this lock)."""
+    try:
+        await asyncio.wait_for(_capture_lock.acquire(), LOCK_WAIT_S)
+    except asyncio.TimeoutError:
+        raise CaptureError(busy_message) from None
+    try:
+        yield
+    finally:
+        _capture_lock.release()
 
 
 async def capture(url: str, device: str = "desktop", full_page: bool = True) -> CaptureResult:

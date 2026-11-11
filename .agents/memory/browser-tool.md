@@ -17,3 +17,8 @@ description: Why browser_screenshot is gated, how Chromium runs here, and captur
 
 - Test servers on a second port: start with ShellExec run_in_background; `nohup ... &` inside a normal ShellExec dies when that shell exits.
 - ClickUp upload tool only accepts regular task IDs; custom IDs (e.g. SA3-8) must be resolved via GET /task/<id>?custom_task_ids=true&team_id=<workspace>. **Why:** kept scope minimal at user's request.
+
+## Site checks (tracking/consent + page audit)
+- Server egress IP is US (Google Cloud). Region-aware CMPs (Cookiebot confirmed: `regulations.gdprApplies=false`, auto-consent, `/us/` redirect) behave as for US visitors, so consent findings can be wrong for EU visitors. Always surface the geo warning; a real EU check needs an EU egress (published geography is fixed once published).
+- Tracking beacons and all non-GET requests are fulfilled locally (204 + CORS echo) instead of aborted: aborting produced fake console errors ("Failed to fetch") and still looked like failures. **Why:** never pollute client analytics or submit forms (user wants tracking checks, tool must stay read-only).
+- Many big sites (Coolblue, De Standaard) block headless Chromium via Cloudflare/Akamai challenge; not fixable without stealth — flagged as finding.
