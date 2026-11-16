@@ -14,6 +14,7 @@ Tools:
   Places: places_search, places_details (local competitors; daily cap PLACES_DAILY_CAP)
   Business Profile: gbp_list_accounts, gbp_list_locations, gbp_location_details,
        gbp_performance, gbp_search_keywords, gbp_list_reviews (read-only)
+  Public competitor research: google_ads_transparency_search (read-only)
 """
 
 from fastmcp import FastMCP

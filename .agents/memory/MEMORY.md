@@ -3,3 +3,4 @@
 - [GBP API access status](gbp-access.md) — as of 2026-11-10 GBP APIs off + access not approved for GCP project 294994430690; live check of gbp_ tools still pending.
 - [uv deployment venv fix](uv-deploy-venv.md) — `.pythonlibs` must be a uv venv built on the real nix Python (not the wrapper) or `uv sync`/publish fails with nix-store permission errors.
 - [Shared Google login](google-login.md) — Playground re-login for new scopes; Merchant dev registration; Places returns no review texts.
+- [Ads Transparency](ads-transparency.md) — public Center supports direct domain URLs and advertiser-name search through its UI; results are regional and not account metrics.

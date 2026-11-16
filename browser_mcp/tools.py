@@ -149,6 +149,7 @@ def register(mcp) -> bool:
 def _register_site_checks(mcp) -> None:
     from browser_mcp.capture import CaptureError
     from browser_mcp.sitecheck import run_page_audit, run_tracking_check
+    from browser_mcp.transparency import run_transparency_search
     from mcp.types import ToolAnnotations
 
     ro = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
@@ -218,6 +219,35 @@ def _register_site_checks(mcp) -> None:
             report = await run_page_audit(url=url, device=device)
         except CaptureError as e:
             return _err("browser_page_audit", e)
+        return ToolResult(content=[TextContent(type="text", text=json.dumps(report, ensure_ascii=False, indent=1))])
+
+    @mcp.tool(annotations=ro)
+    async def google_ads_transparency_search(
+        query: str,
+        region: str = "anywhere",
+        max_ads: int = 10,
+    ) -> ToolResult:
+        """Searches the public Google Ads Transparency Center for an advertiser or website.
+
+        Use this for read-only competitor research: find public advertisers, visible ad
+        previews, public advertiser verification, ad formats and direct Transparency Center
+        links. It does not access a Google Ads account and does not provide spend, clicks,
+        targeting or conversion data.
+
+        Args:
+            query: Advertiser name or website/domain (e.g. "Example BV" or "example.be").
+            region: "anywhere" or an ISO country code such as "BE", "NL", "FR" or "DE".
+            max_ads: Maximum number of public ad previews to return (1-30, default 10).
+
+        Safe: no Google login, ad clicks, landing-page visits, form submissions or writes.
+        Results are public and may vary by region and Google availability.
+        """
+        try:
+            report = await run_transparency_search(
+                query=query, region=region, max_ads=max_ads
+            )
+        except CaptureError as e:
+            return _err("google_ads_transparency_search", e)
         return ToolResult(content=[TextContent(type="text", text=json.dumps(report, ensure_ascii=False, indent=1))])
 
 
