@@ -100,7 +100,19 @@ def _card_format(class_name: str) -> str:
         return "wide"
     if "tall" in classes:
         return "tall"
-    return "other"
+    return "unknown"
+
+
+def normalize_ad_format(value: Optional[str]) -> str:
+    """Maps the localized detail-page label to a stable media category."""
+    raw = (value or "").strip().lower()
+    if re.search(r"\b(text|tekst)\b", raw):
+        return "text"
+    if re.search(r"\b(image|afbeelding|beeld|display)\b", raw):
+        return "image"
+    if re.search(r"\b(video|video-advertentie|videoadvertentie)\b", raw):
+        return "video"
+    return "unknown"
 
 
 def _dedupe_cards(cards: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
@@ -188,15 +200,42 @@ async def _extract_cards(page, limit: int) -> List[Dict[str, Any]]:
             "advertiser_url": item.get("advertiser_url") or None,
             "creative_url": item.get("creative_url"),
             "preview_image_url": item.get("image_url"),
-            "format": _card_format(item.get("format", "")),
+            "format": "unknown",
+            "preview_shape": _card_format(item.get("format", "")),
             "label": item.get("label") or None,
         })
     return _dedupe_cards(cards, limit)
 
 
-async def _page_info(page, query: str, query_type: str, region: str) -> Dict[str, Any]:
+async def _enrich_card_details(page, cards: List[Dict[str, Any]]) -> None:
+    """Reads public labels from each creative detail page, without opening ads."""
+    search_url = page.url
+    for card in cards:
+        try:
+            await page.goto(card["creative_url"], wait_until="domcontentloaded", timeout=60000)
+            await _wait_for_results(page)
+            labels = parse_detail_labels(await page.locator("body").inner_text())
+            card["format_label"] = labels["format"]
+            card["format"] = normalize_ad_format(labels["format"]) or _card_format(
+                card.get("preview_shape", "")
+            )
+            card["last_shown"] = labels["last_shown"]
+            card["shown_in"] = labels["shown_in"]
+            card["detail_page_url"] = page.url
+        except Exception as e:  # noqa: BLE001 — one unavailable creative must not lose the search
+            card["format"] = card.get("format") or "unknown"
+            card["detail_error"] = type(e).__name__
+    # Keep the report URL on the search result, not on the last detail page.
+    with contextlib.suppress(Exception):
+        await page.goto(search_url, wait_until="domcontentloaded", timeout=60000)
+
+
+async def _page_info(
+    page, query: str, query_type: str, region: str, max_ads: int
+) -> Dict[str, Any]:
     text = await page.locator("body").inner_text()
-    cards = await _extract_cards(page, 30)
+    cards = await _extract_cards(page, max_ads)
+    await _enrich_card_details(page, cards)
     headings = [line.strip() for line in text.splitlines() if line.strip()]
     advertiser = next(
         (c["advertiser"] for c in cards if c.get("advertiser")),
@@ -268,8 +307,7 @@ async def run_transparency_search(
             context, page = await new_hardened_context(browser, "desktop")
             try:
                 await _search_page(page, query, region)
-                info = await _page_info(page, query, query_type, region)
-                info["cards"] = (info.get("cards") or [])[:max_ads]
+                info = await _page_info(page, query, query_type, region, max_ads)
                 return build_transparency_report(
                     query, region, query_type, info, time.monotonic() - started
                 )

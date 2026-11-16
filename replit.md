@@ -60,7 +60,7 @@ Shared helper `ads_mcp/user_credentials.py` (REST helper for Merchant/GTM: `ads_
 Code in `browser_mcp/` (headless Nix Chromium via Playwright). Params: `url` (public https), `device` (`desktop` 1440×900 / `mobile` 390×844 emulation), `full_page` (default true). Returns MCP image content (JPEG) + JSON metadata.
 
 - Every request (navigation, redirects, subresources, websockets) goes through a local CONNECT-only guard proxy that resolves DNS itself and only connects to public IPs on port 443. Chromium's own DNS is disabled.
-- One capture at a time, 60s total cap, fresh browser per capture, always closed.
+- One browser job at a time, queued rather than rejected when another screenshot/site check is running; fresh browser per job, always closed.
 - Chromium launch timeout 45s (`BROWSER_LAUNCH_TIMEOUT_MS`); launch failures are logged and classified (timeout / sandbox / other).
 - Pages taller than 8000px are downscaled (not cropped) up to 20000px; taller → labelled viewport fallback.
 

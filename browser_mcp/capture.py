@@ -51,7 +51,6 @@ MAX_FULL_PAGE_HEIGHT = _env_int("BROWSER_MAX_FULL_PAGE_HEIGHT", 8000)
 MAX_SCALABLE_PAGE_HEIGHT = _env_int("BROWSER_MAX_SCALABLE_PAGE_HEIGHT", 20000)
 MAX_IMAGE_BYTES = _env_int("BROWSER_MAX_IMAGE_BYTES", 3_500_000)
 JPEG_QUALITIES = (75, 50)
-LOCK_WAIT_S = 5
 
 _capture_lock = asyncio.Lock()
 
@@ -489,12 +488,9 @@ async def check_public_url(url: str) -> str:
 
 
 @contextlib.asynccontextmanager
-async def browser_slot(busy_message: str = "Er loopt al een browsertaak; probeer het zo opnieuw."):
-    """One browser job at a time (screenshots and site checks share this lock)."""
-    try:
-        await asyncio.wait_for(_capture_lock.acquire(), LOCK_WAIT_S)
-    except asyncio.TimeoutError:
-        raise CaptureError(busy_message) from None
+async def browser_slot():
+    """One queued browser job at a time (screenshots and site checks share this lock)."""
+    await _capture_lock.acquire()
     try:
         yield
     finally:
@@ -510,10 +506,7 @@ async def capture(url: str, device: str = "desktop", full_page: bool = True) -> 
     except BlockedURLError as e:
         raise CaptureError(f"URL geweigerd: {e}") from None
 
-    try:
-        await asyncio.wait_for(_capture_lock.acquire(), LOCK_WAIT_S)
-    except asyncio.TimeoutError:
-        raise CaptureError("Er loopt al een screenshot; probeer het zo opnieuw.") from None
+    await _capture_lock.acquire()
     started = time.monotonic()
     outcome = "error"
     try:

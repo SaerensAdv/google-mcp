@@ -1,11 +1,14 @@
 """Pure tests for the public Google Ads Transparency search."""
 
+import asyncio
 import unittest
 
+from browser_mcp.capture import browser_slot
 from browser_mcp.transparency import (
     build_transparency_report,
     build_transparency_url,
     normalize_region,
+    normalize_ad_format,
     parse_ad_count,
     parse_detail_labels,
 )
@@ -38,6 +41,12 @@ class TransparencyPureTests(unittest.TestCase):
         self.assertEqual(parse_ad_count("74 advertenties"), 74)
         self.assertEqual(parse_ad_count("2 ads"), 2)
         self.assertEqual(parse_ad_count("geen resultaten"), None)
+
+    def test_ad_format_mapping(self):
+        self.assertEqual(normalize_ad_format("Tekst"), "text")
+        self.assertEqual(normalize_ad_format("Afbeelding"), "image")
+        self.assertEqual(normalize_ad_format("Video"), "video")
+        self.assertEqual(normalize_ad_format("Onbekend formaat"), "unknown")
 
     def test_detail_labels(self):
         text = """Advertentiedetails
@@ -73,6 +82,27 @@ class TransparencyPureTests(unittest.TestCase):
         self.assertTrue(report["ads"][0]["creative_url"].startswith("https://"))
         self.assertTrue(report["notes"])
         self.assertNotIn("spend", report)
+
+
+class BrowserQueueTests(unittest.TestCase):
+    def test_second_browser_job_waits_for_first(self):
+        async def scenario():
+            entered = []
+
+            async def job(name, delay):
+                async with browser_slot():
+                    entered.append(name)
+                    await asyncio.sleep(delay)
+
+            first = asyncio.create_task(job("first", 0.05))
+            await asyncio.sleep(0.005)
+            second = asyncio.create_task(job("second", 0))
+            await asyncio.sleep(0.01)
+            self.assertEqual(entered, ["first"])
+            await asyncio.gather(first, second)
+            self.assertEqual(entered, ["first", "second"])
+
+        asyncio.run(scenario())
 
 
 if __name__ == "__main__":

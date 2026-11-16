@@ -22,3 +22,5 @@ description: Why browser_screenshot is gated, how Chromium runs here, and captur
 - Server egress IP is US (Google Cloud). Region-aware CMPs (Cookiebot confirmed: `regulations.gdprApplies=false`, auto-consent, `/us/` redirect) behave as for US visitors, so consent findings can be wrong for EU visitors. Always surface the geo warning; a real EU check needs an EU egress (published geography is fixed once published).
 - Tracking beacons and all non-GET requests are fulfilled locally (204 + CORS echo) instead of aborted: aborting produced fake console errors ("Failed to fetch") and still looked like failures. **Why:** never pollute client analytics or submit forms (user wants tracking checks, tool must stay read-only).
 - Many big sites (Coolblue, De Standaard) block headless Chromium via Cloudflare/Akamai challenge; not fixable without stealth — flagged as finding.
+- Browser jobs share one queue and wait for the previous screenshot/site check instead of failing after a short lock timeout.
+  **Why:** ClickUp Brain may issue several independent browser requests together; rejecting all but the first made parallel SOPs unreliable.
